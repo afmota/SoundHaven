@@ -1,5 +1,5 @@
 /* ========================================= */
-/* ESTILOS ESPECÍFICOS DE COLEÇÃO            */
+/* ESTILOS ESPECÍFICOS DE COLEÇÃO            */
 /* (Usados em colecao.php, editar_colecao.php, detalhes_colecao.php) */
 /* ========================================= */
 
@@ -618,7 +618,7 @@
     color: white;
 }
 
-/* Responsividade */
+/* Responsividade do Modal */
 @media (max-width: 768px) {
     .modal-grid {
         grid-template-columns: 1fr;
@@ -634,6 +634,7 @@
         min-width: 100%; /* Empilha itens de informação em telas menores */
     }
 }
+
 
 /* -------------------------------------- */
 /* RESPONSIVIDADE PARA O GRID DE CARDS */

@@ -239,7 +239,11 @@ require_once '../include/header.php';
 
                             <label for="titulo">Título do Álbum:*</label>
                             <input type="text" id="titulo" name="titulo" required 
-                                    value="<?php echo htmlspecialchars(html_entity_decode($dados_store['titulo'] ?? '', ENT_QUOTES, 'UTF-8')); ?>">
+                                   value="<?php 
+                                        // CORREÇÃO APLICADA AQUI: Usar html_entity_decode antes de htmlspecialchars para garantir que o texto seja exibido puramente no campo.
+                                        $titulo_puro = html_entity_decode($dados_store['titulo'] ?? '', ENT_QUOTES, 'UTF-8');
+                                        echo htmlspecialchars($titulo_puro); 
+                                   ?>">
                             <small>Exemplo: Let's Dance</small>
 
                             <label for="artistas">Artista(s):*</label>
@@ -321,7 +325,7 @@ require_once '../include/header.php';
                             
                             <label for="data_lancamento">Data de Lançamento:</label>
                             <input type="date" id="data_lancamento" name="data_lancamento"
-                                    value="<?php echo htmlspecialchars($dados_store['data_lancamento'] ?? ''); ?>">
+                                   value="<?php echo htmlspecialchars($dados_store['data_lancamento'] ?? ''); ?>">
 
                             <label for="gravadora_id">Gravadora:</label>
                             <div class="form-group-with-add">
@@ -387,8 +391,11 @@ require_once '../include/header.php';
                                     }
                                     
                                     if ($tipo_descricao) {
-                                        // CORREÇÃO: Usamos html_entity_decode para exibir corretamente o tipo.
-                                        echo htmlspecialchars(html_entity_decode("Tipo de Álbum Original (Catálogo): " . $tipo_descricao . "\n", ENT_QUOTES, 'UTF-8'));
+                                        // CORREÇÃO APLICADA AQUI: O valor de $tipo_descricao (que já pode conter entidades do DB) é
+                                        // decodificado antes de ser concatenado e, em seguida, todo o bloco é codificado para exibição segura
+                                        // no corpo do textarea, garantindo que "Não Informado" apareça corretamente.
+                                        $texto_puro = html_entity_decode("Tipo de Álbum Original (Catálogo): " . $tipo_descricao . "\n", ENT_QUOTES, 'UTF-8');
+                                        echo htmlspecialchars($texto_puro);
                                     }
                                 }
                             ?></textarea>

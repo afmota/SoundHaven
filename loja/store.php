@@ -101,6 +101,10 @@ if ($deletado_filtro != -1) {
     $bind_params[':deletado_filtro'] = $deletado_filtro;
 }
 
+// NOVO FILTRO: NÃO EXIBIR SITUAÇÃO 4 (Não Lançado/Privado)
+// A SITUAÇÃO 5 (Em Rascunho/Oculto) JÁ É O PADRÃO PARA NÃO EXIBIR
+$where_condicoes[] = "s.situacao NOT IN (4, 5)";
+
 
 // Lógica de reset de página ao aplicar novo filtro
 $has_filter = !empty($termo_busca) || $artista_filtro !== null || $tipo_filtro !== null || $situacao_filtro !== null || $formato_filtro !== null || $deletado_filtro != 0;
@@ -244,15 +248,15 @@ require_once '../include/header.php';
                 <p class="alerta">Nenhum álbum encontrado com os filtros selecionados.</p>
             <?php else: ?>
                 
-                <div class="store-grid-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; margin-top: 20px;">
+                <div class="store-grid-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; margin-top: 20px;">
                     
                     <?php foreach ($albuns as $album): ?>
                         <div class="album-card" style="
-                            background-color: var(--cor-card); 
+                            background-color: var(--cor-fundo-card); /* CORRIGIDO: Usando a variável do CSS */
                             border: 1px solid var(--cor-borda); 
                             border-radius: 8px; 
                             overflow: hidden; 
-                            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
+                            box-shadow: 0 4px 8px var(--sombra-card); /* CORRIGIDO: Usando a variável do CSS */
                             transition: transform 0.2s;
                             <?php echo ($album['deletado'] == 1) ? 'opacity: 0.5; filter: grayscale(100%);' : ''; ?>
                         " onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
@@ -281,7 +285,7 @@ require_once '../include/header.php';
                                 
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
                                     <?php if ($album['situacao'] == 1): // Disponível (Exemplo) ?>
-                                        <span class="price-tag" style="font-weight: bold; color: var(--cor-sucesso); font-size: 1.1em;">
+                                        <span class="price-tag" style="font-weight: bold; color: var(--cor-destaque); font-size: 1.1em;">
                                             R$ <?php echo number_format($album['preco_sugerido'] ?? 0.00, 2, ',', '.'); ?>
                                         </span>
                                     <?php elseif ($album['situacao'] == 2): // ESGOTADO (Exemplo) ?>
