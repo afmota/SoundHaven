@@ -230,24 +230,31 @@
 
 
 /* ESTILOS DA PÁGINA COLECAO.PHP (LISTA DE CARDS) */
+/* Novo card minimalista: Ajustamos a largura máxima para se adequar ao grid de 5 colunas */
 .colecao-card-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); /* Mínimo 400px, máximo 1fr. Cria 2 colunas em telas maiores */
+    /* Padrão para telas grandes (5 colunas) */
+    grid-template-columns: repeat(5, 1fr);
     gap: 20px;
-    padding-top: 10px;
+    margin-top: 20px;
 }
 
 /* Estilo do Card individual da Coleção */
 .colecao-item-card {
-    display: flex;
-    flex-direction: column;
-    padding: 0; 
-    border-radius: var(--card-border-radius);
-    overflow: hidden; 
+    /* Fazemos a capa ser o elemento clicável no novo layout */
+    text-align: center;
+    border: 1px solid var(--cor-borda);
+    padding: 0; /* Remove padding do card principal */
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.colecao-item-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px var(--sombra-card);
 }
 
 /* 1. SEÇÃO PRINCIPAL (Capa e Detalhes) */
-.card-header-main {
+/*.card-header-main {
     display: flex;
     gap: 15px;
     padding: 15px;
@@ -255,20 +262,32 @@
     border-bottom: 1px solid var(--cor-borda); 
 }
 
-.card-capa-wrapper {
+/*.card-capa-wrapper {
     flex-shrink: 0; 
+}*/
+
+.card-capa-wrapper {
+    /* O wrapper da capa para o novo design */
+    width: 100%;
+    /* Mantém a proporção 1:1, crucial para o layout de galeria */
+    aspect-ratio: 1 / 1; 
+    overflow: hidden;
+    background-color: var(--cor-borda-input); 
 }
 
 .colecao-capa-grande {
-    width: 100px;
-    height: 100px;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
-    border-radius: 4px;
+    display: block;
+}
+
+.colecao-capa-grande.no-cover {
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: var(--cor-fundo-principal);
-    font-size: 10px;
+    font-size: 1.2em;
+    font-weight: bold;
     color: var(--cor-texto-secundario);
 }
 
@@ -317,6 +336,49 @@
 .info-block p {
     margin: 5px 0;
     font-weight: 500;
+}
+
+/* ========================================== */
+/* ESTILOS DE TEXTO PARA CARDS MINIMALISTAS */
+/* ========================================== */
+
+.colecao-card-minimal-details {
+    padding: 10px 8px; /* Reduz o padding para encaixar melhor no grid de 5 colunas */
+    min-height: 60px; /* Garante que todos os cards tenham altura mínima */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.card-titulo-minimal {
+    margin: 0;
+    /* Fonte do título ajustada para 1em */
+    font-size: 1em; 
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* Limita o título a duas linhas */
+    display: -webkit-box;
+    -webkit-line-clamp: 2; 
+    -webkit-box-orient: vertical;
+    width: 100%;
+    color: var(--cor-texto-principal);
+    font-weight: 600;
+    text-align: center;
+}
+
+.card-artista-minimal {
+    margin: 5px 0 0 0;
+    /* Fonte menor para o artista */
+    font-size: 0.85em; 
+    color: var(--cor-texto-secundario); /* Cor secundária */
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    width: 100%;
+    font-weight: normal;
+    text-align: center;
 }
 
 /* 3. RODAPÉ DE AÇÕES */
@@ -419,4 +481,181 @@
 
 .form-group-with-add.adding-mode .btn-add-entity:hover {
     background-color: #169e46; 
+}
+
+/* ========================================== */
+/* MODAL DE DETALHES DA COLEÇÃO */
+/* ========================================== */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: none; /* Escondido por padrão, alterado para flex pelo JS */
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: var(--cor-fundo-card);
+    border-radius: var(--card-border-radius);
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+    color: var(--cor-texto-principal);
+    box-shadow: 0 5px 15px var(--sombra-card);
+    padding: 20px;
+    position: relative;
+    transform: scale(0.95);
+    transition: transform 0.2s ease-out;
+}
+
+.modal-content.loaded {
+    transform: scale(1);
+}
+
+.modal-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--cor-texto-secundario);
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.modal-close:hover {
+    color: #dc3545; /* Vermelho mais vibrante */
+}
+
+/* Layout de duas colunas para o conteúdo do modal */
+.modal-grid {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 30px;
+    margin-top: 20px;
+}
+
+.modal-capa {
+    width: 100%;
+    height: auto;
+    border-radius: var(--card-border-radius);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+
+.modal-details-container h2 {
+    margin-top: 0;
+    margin-bottom: 5px;
+    color: var(--cor-destaque);
+}
+
+.modal-details-container p {
+    margin: 5px 0;
+}
+
+.modal-details-section {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid var(--cor-borda);
+}
+
+.modal-details-section h3 {
+    color: var(--cor-texto-secundario);
+    font-size: 1.1em;
+    margin-bottom: 10px;
+}
+
+.modal-info-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.modal-info-item {
+    min-width: 150px;
+}
+
+.modal-info-item strong {
+    display: block;
+    color: var(--cor-destaque);
+    font-size: 0.85em;
+    margin-bottom: 3px;
+}
+
+.modal-actions {
+    margin-top: 25px;
+    text-align: right;
+    border-top: 1px solid var(--cor-borda);
+    padding-top: 15px;
+}
+
+.modal-actions a {
+    display: inline-block;
+    padding: 8px 15px;
+    text-decoration: none;
+    font-weight: bold;
+    border-radius: 4px;
+    margin-left: 10px;
+    transition: opacity 0.2s;
+}
+
+.modal-actions a:hover {
+    opacity: 0.8;
+}
+
+.modal-actions .edit {
+    background-color: #007bff;
+    color: white;
+}
+
+.modal-actions .delete {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .modal-grid {
+        grid-template-columns: 1fr;
+    }
+    .modal-col-capa {
+        text-align: center;
+    }
+    .modal-capa {
+        max-width: 150px;
+        margin: 0 auto 20px;
+    }
+    .modal-info-item {
+        min-width: 100%; /* Empilha itens de informação em telas menores */
+    }
+}
+
+/* -------------------------------------- */
+/* RESPONSIVIDADE PARA O GRID DE CARDS */
+/* -------------------------------------- */
+
+/* Telas de tablet ou desktop menores (1024px e abaixo) -> 4 colunas */
+@media (max-width: 1200px) {
+    .colecao-card-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* Telas de tablet (768px e abaixo) -> 3 colunas */
+@media (max-width: 900px) {
+    .colecao-card-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Telas de celular (480px e abaixo) -> 2 colunas */
+@media (max-width: 600px) {
+    .colecao-card-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
