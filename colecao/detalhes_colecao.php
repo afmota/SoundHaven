@@ -85,7 +85,7 @@ require_once '../include/header.php';
                         
                     <?php endif; ?>
 
-                    <a href="/dashboard.php" class="back-link secondary-action">
+                    <a href="colecao.php" class="back-link secondary-action">
                         <i class="fas fa-chevron-left"></i> Voltar à Coleção
                     </a>
                 </div>
