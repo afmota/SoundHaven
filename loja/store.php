@@ -211,9 +211,14 @@ require_once '../include/header.php';
             <div class="page-header-actions">
                 <h1>Catálogo (Total: <?php echo $total_registros; ?>)</h1>
                 
-                <a href="adicionar_album.php" class="btn-adicionar-catalogo">
-                    <i class="fas fa-plus-circle"></i> Adicionar Álbum
-                </a>
+                <div style="display: flex; gap: 10px;"> 
+                    <a href="importar_store.php" class="btn-adicionar-catalogo">
+                        <i class="fas fa-file-upload"></i> Importar em Lote
+                    </a>
+                    <a href="adicionar_album.php" class="btn-adicionar-catalogo">
+                        <i class="fas fa-plus-circle"></i> Adicionar Álbum
+                    </a>
+                </div>
             </div>
 
             <?php 
@@ -421,3 +426,4 @@ require_once '../include/header.php';
 
 <?php
 require_once '../include/footer.php';
+?>

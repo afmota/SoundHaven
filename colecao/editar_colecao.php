@@ -194,7 +194,7 @@ if ($colecao_id) {
 
 
 // ----------------------------------------------------
-// 4. HTML DO FORMULÁRIO (Com pré-preenchimento)
+// 4. HTML DO FORMULÁRIO (Com pré-preenchimento e Adição Rápida)
 // ----------------------------------------------------
 require_once '../include/header.php'; 
 ?>
@@ -239,56 +239,88 @@ require_once '../include/header.php';
                                         value="<?php echo htmlspecialchars($item['titulo'] ?? ''); ?>">
 
                                 <label for="artistas">Artista(s):*</label>
-                                <select id="artistas" name="artistas[]" multiple required style="min-height: 120px;">
-                                    <?php 
-                                    foreach ($listas['artistas'] as $artista): 
-                                        $is_selected = in_array($artista['id'], $artistas_selecionados);
-                                    ?>
-                                        <option value="<?php echo $artista['id']; ?>"
-                                                <?php echo $is_selected ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($artista['nome']); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
+                                <div class="form-group-with-add">
+                                    <select id="artistas" name="artistas[]" multiple required style="min-height: 120px;">
+                                        <?php 
+                                        foreach ($listas['artistas'] as $artista): 
+                                            $is_selected = in_array($artista['id'], $artistas_selecionados);
+                                        ?>
+                                            <option value="<?php echo $artista['id']; ?>"
+                                                    <?php echo $is_selected ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($artista['nome']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <div class="add-new-controls">
+                                        <input type="text" id="artistas_novo_nome" placeholder="Novo Artista" class="small-input">
+                                        <button type="button" class="btn-add-entity" data-target-id="artistas" data-table="artistas" data-input-id="artistas_novo_nome">
+                                            <i class="fas fa-plus add-icon"></i><i class="fas fa-check save-icon"></i>
+                                        </button>
+                                    </div>
+                                </div>
                                 <small>Use Ctrl (ou Cmd) para selecionar múltiplos artistas. **Obrigatório**</small>
 
                                 <label for="produtores">Produtor(es):</label>
-                                <select id="produtores" name="produtores[]" multiple style="min-height: 120px;">
-                                    <?php foreach ($listas['produtores'] as $produtor): 
-                                        $is_selected = in_array($produtor['id'], $produtores_selecionados);
-                                    ?>
-                                        <option value="<?php echo $produtor['id']; ?>"
-                                                <?php echo $is_selected ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($produtor['nome']); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
+                                <div class="form-group-with-add">
+                                    <select id="produtores" name="produtores[]" multiple style="min-height: 120px;">
+                                        <?php foreach ($listas['produtores'] as $produtor): 
+                                            $is_selected = in_array($produtor['id'], $produtores_selecionados);
+                                        ?>
+                                            <option value="<?php echo $produtor['id']; ?>"
+                                                    <?php echo $is_selected ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($produtor['nome']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <div class="add-new-controls">
+                                        <input type="text" id="produtores_novo_nome" placeholder="Novo Produtor" class="small-input">
+                                        <button type="button" class="btn-add-entity" data-target-id="produtores" data-table="produtores" data-input-id="produtores_novo_nome">
+                                            <i class="fas fa-plus add-icon"></i><i class="fas fa-check save-icon"></i>
+                                        </button>
+                                    </div>
+                                </div>
                                 <small>Use Ctrl (ou Cmd) para selecionar múltiplos produtores.</small>
                                 
                                 <label for="generos">Gênero(s) Principal(is):</label>
-                                <select id="generos" name="generos[]" multiple style="min-height: 120px;">
-                                    <?php foreach ($listas['generos'] as $genero): 
-                                        $is_selected = in_array($genero['id'], $generos_selecionados);
-                                    ?>
-                                        <option value="<?php echo $genero['id']; ?>"
-                                                <?php echo $is_selected ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($genero['descricao']); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
+                                <div class="form-group-with-add">
+                                    <select id="generos" name="generos[]" multiple style="min-height: 120px;">
+                                        <?php foreach ($listas['generos'] as $genero): 
+                                            $is_selected = in_array($genero['id'], $generos_selecionados);
+                                        ?>
+                                            <option value="<?php echo $genero['id']; ?>"
+                                                    <?php echo $is_selected ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($genero['descricao']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <div class="add-new-controls">
+                                        <input type="text" id="generos_novo_nome" placeholder="Novo Gênero" class="small-input">
+                                        <button type="button" class="btn-add-entity" data-target-id="generos" data-table="generos" data-input-id="generos_novo_nome">
+                                            <i class="fas fa-plus add-icon"></i><i class="fas fa-check save-icon"></i>
+                                        </button>
+                                    </div>
+                                </div>
                                 <small>Gêneros **principais** (Ex: Rock, Jazz).</small>
 
                                 <label for="estilos">Estilos/Subgêneros:</label>
-                                <select id="estilos" name="estilos[]" multiple style="min-height: 120px;">
-                                    <?php foreach ($listas['estilos'] as $estilo): 
-                                        $is_selected = in_array($estilo['id'], $estilos_selecionados);
-                                    ?>
-                                        <option value="<?php echo $estilo['id']; ?>"
-                                                <?php echo $is_selected ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($estilo['descricao']); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
+                                <div class="form-group-with-add">
+                                    <select id="estilos" name="estilos[]" multiple style="min-height: 120px;">
+                                        <?php foreach ($listas['estilos'] as $estilo): 
+                                            $is_selected = in_array($estilo['id'], $estilos_selecionados);
+                                        ?>
+                                            <option value="<?php echo $estilo['id']; ?>"
+                                                    <?php echo $is_selected ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($estilo['descricao']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <div class="add-new-controls">
+                                        <input type="text" id="estilos_novo_nome" placeholder="Novo Estilo" class="small-input">
+                                        <button type="button" class="btn-add-entity" data-target-id="estilos" data-table="estilos" data-input-id="estilos_novo_nome">
+                                            <i class="fas fa-plus add-icon"></i><i class="fas fa-check save-icon"></i>
+                                        </button>
+                                    </div>
+                                </div>
                                 <small>Estilos **detalhados** (Ex: Post-Punk, Bossa Nova).</small>
                                 
                                 <label for="data_lancamento">Data de Lançamento:</label>
@@ -296,15 +328,23 @@ require_once '../include/header.php';
                                         value="<?php echo htmlspecialchars($item['data_lancamento'] ?? ''); ?>">
 
                                 <label for="gravadora_id">Gravadora:</label>
-                                <select id="gravadora_id" name="gravadora_id">
-                                    <option value="">-- Selecione (Opcional) --</option>
-                                    <?php foreach ($listas['gravadoras'] as $gravadora): ?>
-                                        <option value="<?php echo $gravadora['id']; ?>"
-                                                <?php echo ($item['gravadora_id'] == $gravadora['id']) ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($gravadora['nome']); ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
+                                <div class="form-group-with-add">
+                                    <select id="gravadora_id" name="gravadora_id">
+                                        <option value="">-- Selecione (Opcional) --</option>
+                                        <?php foreach ($listas['gravadoras'] as $gravadora): ?>
+                                            <option value="<?php echo $gravadora['id']; ?>"
+                                                    <?php echo ($item['gravadora_id'] == $gravadora['id']) ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($gravadora['nome']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <div class="add-new-controls">
+                                        <input type="text" id="gravadoras_novo_nome" placeholder="Nova Gravadora" class="small-input">
+                                        <button type="button" class="btn-add-entity" data-target-id="gravadora_id" data-table="gravadoras" data-input-id="gravadoras_novo_nome">
+                                            <i class="fas fa-plus add-icon"></i><i class="fas fa-check save-icon"></i>
+                                        </button>
+                                    </div>
+                                </div>
 
                                 <label for="capa_url">URL da Capa (Imagem):</label>
                                 <input type="url" id="capa_url" name="capa_url" placeholder="http://ouhttps://..."
@@ -375,5 +415,96 @@ require_once '../include/header.php';
         </main>
     </div> 
 </div> 
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Seleciona todos os botões de Adição Rápida
+    const buttons = document.querySelectorAll('.btn-add-entity');
+    // NOTE: O endpoint deve ser o caminho correto
+    const endpoint = 'add_entity_ajax.php'; 
+
+    buttons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            const btn = e.currentTarget;
+            const container = btn.closest('.form-group-with-add');
+            const input = document.getElementById(btn.dataset.inputId);
+            const select = document.getElementById(btn.dataset.targetId);
+            
+            // Alternar modo de adição/salvamento
+            if (!container.classList.contains('adding-mode')) {
+                // MODO: ATIVAR ADIÇÃO (Mostra o input e muda o botão para salvar)
+                container.classList.add('adding-mode');
+                input.focus();
+            } else {
+                // MODO: SALVAR
+                const value = input.value.trim();
+                const table = btn.dataset.table;
+
+                if (value.length === 0) {
+                    alert('Por favor, digite um nome antes de salvar.');
+                    return;
+                }
+
+                // Bloqueia o botão e input
+                btn.disabled = true;
+                input.disabled = true;
+                const originalContent = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; // Ícone de loading
+
+                const formData = new FormData();
+                formData.append('table', table);
+                formData.append('value', value);
+
+                fetch(endpoint, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json().then(data => ({ status: response.status, body: data })))
+                .then(({ status, body }) => {
+                    if (status === 200 && body.success) {
+                        // 1. Criar a nova opção
+                        const newOption = document.createElement('option');
+                        newOption.value = body.id;
+                        newOption.textContent = body.value;
+                        
+                        // 2. Adicionar ao SELECT
+                        select.appendChild(newOption);
+
+                        // 3. Selecionar o novo item
+                        if (select.multiple) {
+                            // Para multi-select (Artistas, Produtores, Gêneros, Estilos)
+                            newOption.selected = true; 
+                        } else {
+                            // Para single-select (Gravadora)
+                            select.value = body.id; 
+                        }
+                        
+                        // 4. Feedback e Limpeza
+                        alert(`Sucesso! "${body.value}" adicionado.`);
+                        input.value = '';
+
+                    } else if (status === 409) {
+                        alert(body.message + ' Tente selecionar na lista.');
+                        input.value = '';
+                    } else {
+                        alert('Erro ao adicionar: ' + (body.message || 'Erro de comunicação.'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro de rede:', error);
+                    alert('Erro de rede ou servidor ao tentar salvar.');
+                })
+                .finally(() => {
+                    // MODO: DESATIVAR ADIÇÃO (Voltar ao estado original)
+                    container.classList.remove('adding-mode');
+                    btn.disabled = false;
+                    input.disabled = false;
+                    btn.innerHTML = originalContent; 
+                });
+            }
+        });
+    });
+});
+</script>
 
 <?php require_once '../include/footer.php'; ?>
