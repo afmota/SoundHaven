@@ -49,7 +49,7 @@ if (!$logado && $pagina_atual != 'index.php' && $pagina_atual != 'login.php') {
         
         <div class="header-right-menu">
             <?php if ($logado): ?>
-                <a href="colecao/adicionar_colecao.php" class="btn-adicionar-album">
+                <a href="../colecao/adicionar_colecao.php" class="btn-adicionar-album">
                     <i class="fas fa-plus-circle"></i> Adicionar Álbum
                 </a>
 
