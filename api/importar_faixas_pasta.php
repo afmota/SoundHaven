@@ -11,6 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 // 1. Inclusão da Biblioteca de Tags ID3 (ASSUME A LOCALIZAÇÃO EM ../vendor/getid3/)
+// *** Verifique se o caminho abaixo está correto para sua instalação do getID3 ***
 require_once '../vendor/getid3/getid3.php';
 
 // Inclusão da conexão com o banco de dados e funções (para consistência)
@@ -32,27 +33,32 @@ if (empty($folder_path)) {
 // 3. Verifica a segurança do caminho da pasta
 // CRÍTICO: Define o caminho base onde você armazena seus arquivos.
 // O ideal é que o usuário insira o caminho RELATIVO a esta pasta.
-$base_audio_path = '../audio/'; // EX: Crie uma pasta 'audio' na raiz do seu projeto.
+// *** Ajuste esta variável para a pasta RAIZ dos seus áudios (ex: '../audio/') ***
+$base_audio_path = '../audio/'; 
 $full_path = realpath($base_audio_path . $folder_path);
 
 // Verifica se o caminho é válido e, crucialmente, se ele está DENTRO do diretório base
-if ($full_path === false || strpos($full_path, realpath($base_audio_path)) !== 0) {
+if ($full_path === false || strpos($full_path, realpath($base_audio_path)) !== 0 || !is_dir($full_path)) {
     http_response_code(400);
-    echo json_encode(['status' => 'erro', 'message' => 'Caminho de pasta inválido ou fora da área permitida.']);
+    echo json_encode(['status' => 'erro', 'message' => 'Caminho de pasta inválido ou não encontrado. Verifique se a pasta existe e se o caminho está correto.']);
     exit();
 }
 
 // 4. Lista arquivos
 $allowed_extensions = '{mp3,flac,ogg,wav,m4a}'; // Formatos comuns de áudio
 // Usa GLOB_BRACE e SORT_NATURAL para ordenar corretamente (01, 02, 10, etc.)
-$files = glob($full_path . '/*.{' . $allowed_extensions . '}', GLOB_BRACE | SORT_NATURAL);
+// Adicione o separador de diretório no final do $full_path, se não houver
+$search_path = rtrim($full_path, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . '*.{' . $allowed_extensions . '}';
+$files = glob($search_path, GLOB_BRACE | SORT_NATURAL);
 
 $faixas_encontradas = [];
 $getID3 = new getID3; // Instancia a biblioteca
 
 foreach ($files as $file) {
     $filename = basename($file);
-    // Cria o URL relativo limpo para o <audio> tag
+    
+    // Calcula o URL relativo limpo para o <audio> tag (ex: /audio/sepultura/roots_1996/01_roots_bloody_roots.mp3)
+    // O str_replace abaixo usa realpath('../') (que é a raiz do seu projeto) para obter o caminho relativo.
     $relative_url = str_replace(realpath('../'), '', $file); 
     
     // Tenta analisar o arquivo
@@ -74,7 +80,8 @@ foreach ($files as $file) {
     $faixas_encontradas[] = [
         'titulo' => trim($titulo),
         'duracao' => trim($duracao),
-        'audio_url' => '/' . ltrim($relative_url, '/\\'), // Garante uma URL relativa limpa
+        // Adiciona a barra inicial e remove barras duplicadas, substituindo a barra de diretório por URL-friendly
+        'audio_url' => '/' . ltrim(str_replace(DIRECTORY_SEPARATOR, '/', $relative_url), '/'), 
     ];
 }
 
