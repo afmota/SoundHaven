@@ -1,27 +1,36 @@
 <?php
-// Arquivo: index.php
+// Arquivo: index.php (ATUALIZADO)
 
-// 1. Inclui o arquivo de conexão para ter acesso à variável $pdo
+// 1. Inclui o arquivo de conexão
+// Garanta que 'conexao.php' está na mesma pasta.
 require_once 'db/conexao.php';
 
 // --- Lógica do Negócio: Consulta ao Banco de Dados ---
 
-$sql = "SELECT id, titulo, data_lancamento, criado_em FROM store WHERE deletado = 0 LIMIT 100"; 
+// Seleciona todos os campos solicitados e aplica o filtro 'deletado = 0'.
+$sql = "SELECT 
+            id, 
+            titulo, 
+            artista_id, 
+            data_lancamento, 
+            tipo_id, 
+            situacao, 
+            formato_id
+        FROM 
+            store 
+        WHERE 
+            deletado = 0
+        LIMIT 100"; // Limite de 100 para evitar sobrecarga inicial
 
 try {
-    // 2. Prepara a consulta (Prepared Statement - O segredo da segurança)
+    // Uso de Prepared Statements (Segurança contra SQL Injection)
     $stmt = $pdo->prepare($sql); 
-    
-    // 3. Executa a consulta
     $stmt->execute();
-    
-    // 4. Obtém todos os resultados como um array associativo
     $albuns = $stmt->fetchAll();
 
 } catch (\PDOException $e) {
-    // Em caso de erro na consulta, exibe uma mensagem
     $erro = "Erro ao buscar álbuns: " . $e->getMessage();
-    $albuns = []; // Garante que a variável $albuns seja um array vazio
+    $albuns = []; 
 }
 ?>
 
@@ -29,43 +38,53 @@ try {
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>SoundHaven - Catálogo de Álbuns</title>
+    
+    <title>Acervo Digital</title>
+    
     <link rel="stylesheet" href="css/estilos.css">
 </head>
 <body>
 
-    <h1>Catálogo de Álbuns (SoundHaven)</h1>
+    <h1>Acervo Digital</h1>
     <hr>
 
     <?php if (isset($erro)): ?>
         <p class="erro"><?php echo $erro; ?></p>
     <?php elseif (empty($albuns)): ?>
-        <p>Nenhum álbum encontrado na tabela Store.</p>
+        <p>Nenhum álbum encontrado no Acervo Digital.</p>
     <?php else: ?>
         <table>
             <thead>
                 <tr>
                     <th>ID</th>
-                    <th>Título do Álbum</th>
+                    <th>Título</th>
+                    <th>Artista ID</th>
                     <th>Lançamento</th>
-                    <th>Criado Em</th>
-                </tr>
+                    <th>Tipo ID</th>
+                    <th>Situação ID</th>
+                    <th>Formato ID</th>
+                    <th>Ações</th> </tr>
             </thead>
             <tbody>
                 <?php 
-                // Loop PHP para percorrer os dados obtidos
+                // Loop para exibir os dados
                 foreach ($albuns as $album): 
                 ?>
                 <tr>
                     <td><?php echo htmlspecialchars($album['id']); ?></td>
                     <td><?php echo htmlspecialchars($album['titulo']); ?></td>
+                    <td><?php echo htmlspecialchars($album['artista_id']); ?></td>
                     <td><?php echo htmlspecialchars($album['data_lancamento']); ?></td>
-                    <td><?php echo htmlspecialchars($album['criado_em']); ?></td>
+                    <td><?php echo htmlspecialchars($album['tipo_id']); ?></td>
+                    <td><?php echo htmlspecialchars($album['situacao']); ?></td>
+                    <td><?php echo htmlspecialchars($album['formato_id']); ?></td>
+                    
+                    <td></td> 
                 </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
-        <?php endif; ?>
+    <?php endif; ?>
 
 </body>
 </html>

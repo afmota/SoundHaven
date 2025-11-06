@@ -1,4 +1,4 @@
-/* Arquivo: estilos.css */
+/* Arquivo: estilos.css (Pequena Atualização na largura e fonte) */
 
 body {
     font-family: Arial, sans-serif;
@@ -13,15 +13,17 @@ h1 {
 }
 
 table {
-    width: 80%;
+    /* Aumentado a largura para 95% e diminuído a fonte para acomodar mais colunas */
+    width: 95%; 
     margin: 20px auto;
     border-collapse: collapse;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     background-color: #fff;
+    font-size: 0.9em; 
 }
 
 th, td {
-    padding: 12px 15px;
+    padding: 12px 10px; /* Ajustado o padding para economizar espaço */
     text-align: left;
     border-bottom: 1px solid #ddd;
 }
