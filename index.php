@@ -9,18 +9,20 @@ require_once 'db/conexao.php';
 
 // Seleciona todos os campos solicitados e aplica o filtro 'deletado = 0'.
 $sql = "SELECT 
-            id, 
-            titulo, 
-            artista_id, 
-            data_lancamento, 
-            tipo_id, 
-            situacao, 
-            formato_id
+            T.id, 
+            T.titulo, 
+            A.nome AS nome_artista,       -- NOVO: Pega o nome do artista
+            T.data_lancamento, 
+            T.tipo_id, 
+            T.situacao, 
+            T.formato_id
         FROM 
-            store 
+            store AS T
+        LEFT JOIN 
+            artistas AS A ON T.artista_id = A.id -- JOIN com a tabela artistas
         WHERE 
-            deletado = 0
-        LIMIT 100"; // Limite de 100 para evitar sobrecarga inicial
+            T.deletado = 0
+        LIMIT 100";
 
 try {
     // Uso de Prepared Statements (Segurança contra SQL Injection)
@@ -66,22 +68,20 @@ try {
                     <th>Ações</th> </tr>
             </thead>
             <tbody>
-                <?php 
-                // Loop para exibir os dados
+<?php 
                 foreach ($albuns as $album): 
                 ?>
                 <tr>
                     <td><?php echo htmlspecialchars($album['id'] ?? ''); ?></td>
                     <td><?php echo htmlspecialchars($album['titulo'] ?? ''); ?></td>
-                    <td><?php echo htmlspecialchars($album['artista_id'] ?? 'N/A'); ?></td>
+                    <td><?php echo htmlspecialchars($album['nome_artista'] ?? 'Artista Desconhecido'); ?></td>
                     <td><?php echo htmlspecialchars($album['data_lancamento'] ?? 'N/A'); ?></td>
                     <td><?php echo htmlspecialchars($album['tipo_id'] ?? 'N/A'); ?></td>
                     <td><?php echo htmlspecialchars($album['situacao'] ?? 'N/A'); ?></td>
                     <td><?php echo htmlspecialchars($album['formato_id'] ?? 'N/A'); ?></td>
                     <td></td> 
                 </tr>
-                <?php endforeach; ?>
-            </tbody>        </table>
+                <?php endforeach; ?>            </tbody>        </table>
     <?php endif; ?>
 
 </body>
