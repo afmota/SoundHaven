@@ -1,10 +1,25 @@
 <?php
-// Arquivo: index.php (COM CAMPO DE BUSCA E SCRIPT EXTERNO)
+// Arquivo: index.php (VERSÃO ATUALIZADA)
 
 // 1. Inclui o arquivo de conexão
 require_once 'conexao.php';
 
-// --- Lógica do Negócio: Consulta ao Banco de Dados (Carga Inicial) ---
+// --- CONSULTA 1: BUSCA TODOS OS ARTISTAS (para popular o dropdown) ---
+$sql_artistas = "SELECT id, nome FROM artistas ORDER BY nome ASC";
+$artistas = [];
+
+try {
+    $stmt_artistas = $pdo->prepare($sql_artistas); 
+    $stmt_artistas->execute();
+    $artistas = $stmt_artistas->fetchAll(PDO::FETCH_ASSOC); // Obtém a lista de artistas
+
+} catch (\PDOException $e) {
+    // Se der erro aqui, a página principal ainda deve carregar
+    $erro_artistas = "Erro ao buscar artistas: " . $e->getMessage();
+}
+
+
+// --- CONSULTA 2: BUSCA A LISTAGEM PRINCIPAL (Sua Query Original) ---
 
 $sql = "SELECT
             s.id, 
@@ -38,7 +53,10 @@ try {
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    
     <title>Acervo Digital</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="estilos.css">
 </head>
 <body>
@@ -46,12 +64,29 @@ try {
     <h1>Acervo Digital</h1>
     <hr>
 
+    <div class="filters-container">
+    
         <div class="search-container">
-        <label for="search">Buscar Título do Álbum:</label>
-        <input type="text" id="search" name="search" placeholder="Digite o título do álbum..." autocomplete="off">
+            <label for="search_titulo">Buscar Título do Álbum:</label>
+            <input type="text" id="search_titulo" name="search_titulo" placeholder="Digite o título do álbum..." autocomplete="off">
+        </div>
+        
+        <div class="search-container">
+            <label for="filter_artista">Filtrar por Artista:</label>
+            <select id="filter_artista" name="filter_artista">
+                <option value="">-- Selecione um Artista --</option>
+                <?php if (!empty($artistas)): ?>
+                    <?php foreach ($artistas as $artista): ?>
+                        <option value="<?php echo htmlspecialchars($artista['id']); ?>">
+                            <?php echo htmlspecialchars($artista['nome']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </select>
+        </div>
+        
     </div>
-
-    <?php if (isset($erro)): ?>
+        <?php if (isset($erro)): ?>
         <p class="erro"><?php echo $erro; ?></p>
     <?php elseif (empty($albuns)): ?>
         <p>Nenhum álbum encontrado no Acervo Digital.</p>
@@ -81,7 +116,10 @@ try {
                     <td><?php echo htmlspecialchars($album['tipo'] ?? 'Não Classificado'); ?></td>
                     <td><?php echo htmlspecialchars($album['status'] ?? 'Desconhecida'); ?></td>
                     <td><?php echo htmlspecialchars($album['formato'] ?? 'Sem Formato'); ?></td>
-                    <td></td> 
+                    <td>
+                        <i class="fa-solid fa-pencil" style="color: #007bff; cursor: pointer;" title="Editar"></i>
+                        <i class="fa-solid fa-trash-can" style="color: #dc3545; cursor: pointer; margin-left: 8px;" title="Excluir"></i>
+                    </td> 
                 </tr>
                 <?php endforeach; ?>
             </tbody>
@@ -89,6 +127,7 @@ try {
     <?php endif; ?>
     
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
     <script src="filtro.js"></script>
 </body>
 </html>
