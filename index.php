@@ -8,25 +8,22 @@ require_once 'db/conexao.php';
 // --- Lógica do Negócio: Consulta ao Banco de Dados ---
 
 // Seleciona todos os campos solicitados e aplica o filtro 'deletado = 0'.
-$sql = "SELECT 
-            T.id, 
-            T.titulo, 
-            A.nome AS nome_artista,       
-            TPL.descricao AS descricao_tipo,
-            SIT.descricao AS descricao_situacao,  -- NOVO: Pega a descrição da situação
-            T.data_lancamento, 
-            T.formato_id
-        FROM 
-            store AS T
-        LEFT JOIN 
-            artistas AS A ON T.artista_id = A.id 
-        LEFT JOIN                                   
-            tipo_album AS TPL ON T.tipo_id = TPL.id
-        LEFT JOIN                                     -- NOVO JOIN
-            situacao AS SIT ON T.situacao = SIT.id 
-        WHERE 
-            T.deletado = 0
-        LIMIT 100";
+$sql = "SELECT
+            s.id,
+            s.titulo,
+            a.nome AS nome_artista,
+            s.data_lancamento,
+            t.descricao AS tipo,
+            sit.descricao AS status,
+            f.descricao AS formato
+        FROM store AS s
+            LEFT JOIN artistas AS a ON s.artista_id = a.id
+            LEFT JOIN tipo_album AS t ON s.tipo_id = t.id
+            LEFT JOIN situacao AS sit ON s.situacao = sit.id
+            LEFT JOIN formatos AS f ON s.formato_id = f.id
+        WHERE s.deletado = 0
+        ORDER BY s.data_lancamento
+        LIMIT 100;";
 
 try {
     // Uso de Prepared Statements (Segurança contra SQL Injection)
@@ -82,7 +79,7 @@ try {
                     <td><?php echo htmlspecialchars($album['data_lancamento'] ?? 'N/A'); ?></td>
                     <td><?php echo htmlspecialchars($album['descricao_tipo'] ?? 'Não Classificado'); ?></td>
                     <td><?php echo htmlspecialchars($album['descricao_situacao'] ?? 'Desconhecida'); ?></td>
-                    <td><?php echo htmlspecialchars($album['formato_id'] ?? 'N/A'); ?></td>
+                    <td><?php echo htmlspecialchars($album['descricao_formato'] ?? 'Sem Formato'); ?></td>
                     <td></td> 
                 </tr>
                 <?php endforeach; ?>
