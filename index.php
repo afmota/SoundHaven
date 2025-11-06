@@ -1,18 +1,16 @@
 <?php
-// Arquivo: index.php (ATUALIZADO)
+// Arquivo: index.php (COM CAMPO DE BUSCA E SCRIPT EXTERNO)
 
 // 1. Inclui o arquivo de conexão
-// Garanta que 'conexao.php' está na mesma pasta.
-require_once 'db/conexao.php';
+require_once 'conexao.php';
 
-// --- Lógica do Negócio: Consulta ao Banco de Dados ---
+// --- Lógica do Negócio: Consulta ao Banco de Dados (Carga Inicial) ---
 
-// Seleciona todos os campos solicitados e aplica o filtro 'deletado = 0'.
 $sql = "SELECT
-            s.id,
+            s.id, 
             s.titulo, 
             a.nome AS nome_artista,
-            DATE_FORMAT(s.data_lancamento, '%d-%m-%Y') AS data_lancamento_formatada, 
+            DATE_FORMAT(s.data_lancamento, '%d/%m/%Y') AS data_lancamento, 
             t.descricao AS tipo,
             sit.descricao AS status,
             f.descricao AS formato
@@ -23,10 +21,9 @@ $sql = "SELECT
             LEFT JOIN formatos AS f ON s.formato_id = f.id
         WHERE s.deletado = 0
         ORDER BY s.data_lancamento
-        LIMIT 100;";
+        LIMIT 100;"; 
 
 try {
-    // Uso de Prepared Statements (Segurança contra SQL Injection)
     $stmt = $pdo->prepare($sql); 
     $stmt->execute();
     $albuns = $stmt->fetchAll();
@@ -41,21 +38,18 @@ try {
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    
     <title>Acervo Digital</title>
-    
-    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="stylesheet" href="estilos.css">
 </head>
 <body>
-    <?php 
-    // Verifica se a exclusão foi bem-sucedida
-    if (isset($_GET['status']) && $_GET['status'] == 'deletado'): 
-    ?>
-        <p class="sucesso">Álbum deletado (ocultado) com sucesso!</p>
-    <?php endif; ?>
 
     <h1>Acervo Digital</h1>
     <hr>
+
+        <div class="search-container">
+        <label for="search">Buscar Título do Álbum:</label>
+        <input type="text" id="search" name="search" placeholder="Digite o título do álbum..." autocomplete="off">
+    </div>
 
     <?php if (isset($erro)): ?>
         <p class="erro"><?php echo $erro; ?></p>
@@ -67,15 +61,16 @@ try {
                 <tr>
                     <th>ID</th>
                     <th>Título</th>
-                    <th>Artista ID</th>
+                    <th>Artista/Banda</th>
                     <th>Lançamento</th>
-                    <th>Tipo ID</th>
-                    <th>Situação ID</th>
-                    <th>Formato ID</th>
+                    <th>Tipo</th>
+                    <th>Status</th>
+                    <th>Formato</th>
                     <th>Ações</th> </tr>
             </thead>
             <tbody>
                 <?php 
+                // Loop para exibir os dados
                 foreach ($albuns as $album): 
                 ?>
                 <tr>
@@ -83,20 +78,17 @@ try {
                     <td><?php echo htmlspecialchars($album['titulo'] ?? ''); ?></td>
                     <td><?php echo htmlspecialchars($album['nome_artista'] ?? 'Artista Desconhecido'); ?></td>
                     <td><?php echo htmlspecialchars($album['data_lancamento'] ?? 'N/A'); ?></td>
-                    <td><?php echo htmlspecialchars($album['descricao_tipo'] ?? 'Não Classificado'); ?></td>
-                    <td><?php echo htmlspecialchars($album['descricao_situacao'] ?? 'Desconhecida'); ?></td>
-                    <td><?php echo htmlspecialchars($album['descricao_formato'] ?? 'Sem Formato'); ?></td>
-                    <td>
-                        <a href="deletar.php?id=<?php echo $album['id']; ?>" 
-                            onclick="return confirm('Tem certeza que deseja DELETAR (Ocultar) o álbum: <?php echo htmlspecialchars($album['titulo'] ?? ''); ?>?');"
-                            class="link-deletar">
-                            Excluir
-                        </a>
-                    </td>
+                    <td><?php echo htmlspecialchars($album['tipo'] ?? 'Não Classificado'); ?></td>
+                    <td><?php echo htmlspecialchars($album['status'] ?? 'Desconhecida'); ?></td>
+                    <td><?php echo htmlspecialchars($album['formato'] ?? 'Sem Formato'); ?></td>
+                    <td></td> 
                 </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
     <?php endif; ?>
+    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="filtro.js"></script>
 </body>
 </html>
