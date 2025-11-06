@@ -30,7 +30,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <title>SoundHaven - Catálogo de Álbuns</title>
-    <link rel="stylesheet" href="estilos.css">
+    <link rel="stylesheet" href="css/estilos.css">
 </head>
 <body>
 
