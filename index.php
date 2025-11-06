@@ -71,19 +71,17 @@ try {
                 foreach ($albuns as $album): 
                 ?>
                 <tr>
-                    <td><?php echo htmlspecialchars($album['id']); ?></td>
-                    <td><?php echo htmlspecialchars($album['titulo']); ?></td>
-                    <td><?php echo htmlspecialchars($album['artista_id']); ?></td>
-                    <td><?php echo htmlspecialchars($album['data_lancamento']); ?></td>
-                    <td><?php echo htmlspecialchars($album['tipo_id']); ?></td>
-                    <td><?php echo htmlspecialchars($album['situacao']); ?></td>
-                    <td><?php echo htmlspecialchars($album['formato_id']); ?></td>
-                    
+                    <td><?php echo htmlspecialchars($album['id'] ?? ''); ?></td>
+                    <td><?php echo htmlspecialchars($album['titulo'] ?? ''); ?></td>
+                    <td><?php echo htmlspecialchars($album['artista_id'] ?? 'N/A'); ?></td>
+                    <td><?php echo htmlspecialchars($album['data_lancamento'] ?? 'N/A'); ?></td>
+                    <td><?php echo htmlspecialchars($album['tipo_id'] ?? 'N/A'); ?></td>
+                    <td><?php echo htmlspecialchars($album['situacao'] ?? 'N/A'); ?></td>
+                    <td><?php echo htmlspecialchars($album['formato_id'] ?? 'N/A'); ?></td>
                     <td></td> 
                 </tr>
                 <?php endforeach; ?>
-            </tbody>
-        </table>
+            </tbody>        </table>
     <?php endif; ?>
 
 </body>
