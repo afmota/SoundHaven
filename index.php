@@ -11,15 +11,17 @@ require_once 'db/conexao.php';
 $sql = "SELECT 
             T.id, 
             T.titulo, 
-            A.nome AS nome_artista,       -- NOVO: Pega o nome do artista
+            A.nome AS nome_artista,       
+            TPL.descricao AS descricao_tipo, -- NOVO: Pega a descrição do tipo
             T.data_lancamento, 
-            T.tipo_id, 
             T.situacao, 
             T.formato_id
         FROM 
             store AS T
         LEFT JOIN 
-            artistas AS A ON T.artista_id = A.id -- JOIN com a tabela artistas
+            artistas AS A ON T.artista_id = A.id 
+        LEFT JOIN                                   -- NOVO JOIN
+            tipo_album AS TPL ON T.tipo_id = TPL.id
         WHERE 
             T.deletado = 0
         LIMIT 100";
@@ -68,7 +70,7 @@ try {
                     <th>Ações</th> </tr>
             </thead>
             <tbody>
-<?php 
+                <?php 
                 foreach ($albuns as $album): 
                 ?>
                 <tr>
@@ -76,13 +78,12 @@ try {
                     <td><?php echo htmlspecialchars($album['titulo'] ?? ''); ?></td>
                     <td><?php echo htmlspecialchars($album['nome_artista'] ?? 'Artista Desconhecido'); ?></td>
                     <td><?php echo htmlspecialchars($album['data_lancamento'] ?? 'N/A'); ?></td>
-                    <td><?php echo htmlspecialchars($album['tipo_id'] ?? 'N/A'); ?></td>
+                    <td><?php echo htmlspecialchars($album['descricao_tipo'] ?? 'Não Classificado'); ?></td>
                     <td><?php echo htmlspecialchars($album['situacao'] ?? 'N/A'); ?></td>
                     <td><?php echo htmlspecialchars($album['formato_id'] ?? 'N/A'); ?></td>
                     <td></td> 
                 </tr>
-                <?php endforeach; ?>            </tbody>        </table>
-    <?php endif; ?>
+                <?php endforeach; ?>    <?php endif; ?>
 
 </body>
 </html>
