@@ -10,14 +10,14 @@ require_once 'db/conexao.php';
 // Seleciona todos os campos solicitados e aplica o filtro 'deletado = 0'.
 $sql = "SELECT
             s.id,
-            s.titulo,
+            s.titulo, 
             a.nome AS nome_artista,
-            s.data_lancamento,
+            DATE_FORMAT(s.data_lancamento, '%d-%m-%Y') AS data_lancamento_formatada, 
             t.descricao AS tipo,
             sit.descricao AS status,
             f.descricao AS formato
         FROM store AS s
-            LEFT JOIN artistas AS a ON s.artista_id = a.id
+            LEFT JOIN artistas AS a ON s.artista_id = a.id 
             LEFT JOIN tipo_album AS t ON s.tipo_id = t.id
             LEFT JOIN situacao AS sit ON s.situacao = sit.id
             LEFT JOIN formatos AS f ON s.formato_id = f.id
