@@ -47,6 +47,12 @@ try {
     <link rel="stylesheet" href="css/estilos.css">
 </head>
 <body>
+    <?php 
+    // Verifica se a exclusão foi bem-sucedida
+    if (isset($_GET['status']) && $_GET['status'] == 'deletado'): 
+    ?>
+        <p class="sucesso">Álbum deletado (ocultado) com sucesso!</p>
+    <?php endif; ?>
 
     <h1>Acervo Digital</h1>
     <hr>
@@ -80,7 +86,13 @@ try {
                     <td><?php echo htmlspecialchars($album['descricao_tipo'] ?? 'Não Classificado'); ?></td>
                     <td><?php echo htmlspecialchars($album['descricao_situacao'] ?? 'Desconhecida'); ?></td>
                     <td><?php echo htmlspecialchars($album['descricao_formato'] ?? 'Sem Formato'); ?></td>
-                    <td></td> 
+                    <td>
+                        <a href="deletar.php?id=<?php echo $album['id']; ?>" 
+                            onclick="return confirm('Tem certeza que deseja DELETAR (Ocultar) o álbum: <?php echo htmlspecialchars($album['titulo'] ?? ''); ?>?');"
+                            class="link-deletar">
+                            Excluir
+                        </a>
+                    </td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
