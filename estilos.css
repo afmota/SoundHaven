@@ -28,6 +28,19 @@ th, td {
     border-bottom: 1px solid #ddd;
 }
 
+table td a {
+    text-decoration: none !important; /* Força a remoção do sublinhado */
+}
+
+table td a:hover {
+    text-decoration: none !important;
+}
+
+table td i {
+    font-size: 1.1em;
+    transition: color 0.2s;
+}
+
 thead th {
     background-color: #007bff;
     color: white;
@@ -202,4 +215,40 @@ label {
     border-color: #007bff;
     box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
     outline: none;
+}
+
+/* Arquivo: estilos.css (Adicionar no final) */
+
+/* ---------------------------------- */
+/* PAGINAÇÃO */
+/* ---------------------------------- */
+
+.pagination {
+    display: flex;
+    justify-content: center; /* Centraliza os links */
+    padding: 20px 0;
+    margin-top: 10px;
+}
+
+.page-link {
+    text-decoration: none;
+    color: #007bff;
+    padding: 8px 12px;
+    margin: 0 4px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.page-link:hover {
+    background-color: #e9ecef;
+    border-color: #007bff;
+}
+
+.page-link.active {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+    font-weight: bold;
+    cursor: default;
 }

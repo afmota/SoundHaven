@@ -1,13 +1,42 @@
 <?php
-// Arquivo: index.php (Encarnação Modular)
+// Arquivo: index.php
 
-// Inclui o arquivo de conexão
 require_once 'conexao.php';
 
-// --- CONSULTA 1: BUSCA TODOS OS ARTISTAS (para popular o dropdown) ---
+// --- CONFIGURAÇÃO DE PAGINAÇÃO ---
+$limite_por_pagina = 25; // Define quantos registros por página
+$pagina_atual = isset($_GET['p']) ? (int)$_GET['p'] : 1; // Pega a página atual (padrão 1)
+
+// Garante que o número da página seja válido
+if ($pagina_atual < 1) {
+    $pagina_atual = 1;
+}
+
+// Calcula o OFFSET (o ponto de partida no banco)
+$offset = ($pagina_atual - 1) * $limite_por_pagina;
+
+
+// --- CONSULTA 1: BUSCA O NÚMERO TOTAL DE REGISTROS (PARA CALCULAR AS PÁGINAS) ---
+$sql_total = "SELECT COUNT(id) AS total FROM store WHERE deletado = 0";
+$total_registros = 0;
+
+try {
+    $stmt_total = $pdo->query($sql_total);
+    $resultado_total = $stmt_total->fetch(PDO::FETCH_ASSOC);
+    $total_registros = $resultado_total['total'];
+    
+} catch (\PDOException $e) {
+    // Tratar erro aqui, se necessário
+}
+
+// Calcula o número total de páginas
+$total_paginas = ceil($total_registros / $limite_por_pagina);
+
+
+// --- CONSULTA 2: BUSCA TODOS OS ARTISTAS (para popular o dropdown) ---
 $sql_artistas = "SELECT id, nome FROM artistas ORDER BY nome ASC";
 $artistas = [];
-
+// ... (mantenha a lógica de busca de artistas aqui) ...
 try {
     $stmt_artistas = $pdo->query($sql_artistas); 
     $artistas = $stmt_artistas->fetchAll(PDO::FETCH_ASSOC);
@@ -17,7 +46,7 @@ try {
 }
 
 
-// --- CONSULTA 2: BUSCA A LISTAGEM PRINCIPAL (Carga Inicial) ---
+// --- CONSULTA 3: BUSCA A LISTAGEM PRINCIPAL (AGORA COM LIMIT E OFFSET) ---
 
 $sql = "SELECT
             s.id, 
@@ -33,11 +62,15 @@ $sql = "SELECT
             LEFT JOIN situacao AS sit ON s.situacao = sit.id
             LEFT JOIN formatos AS f ON s.formato_id = f.id
         WHERE s.deletado = 0
-        ORDER BY s.data_lancamento
-        LIMIT 100;"; 
+        ORDER BY s.data_lancamento DESC
+        LIMIT :limite OFFSET :offset"; // <-- CHAVE DA PAGINAÇÃO!
 
 try {
     $stmt = $pdo->prepare($sql); 
+    // Bind dos parâmetros LIMIT e OFFSET
+    $stmt->bindParam(':limite', $limite_por_pagina, PDO::PARAM_INT);
+    $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+    
     $stmt->execute();
     $albuns = $stmt->fetchAll();
 
@@ -46,8 +79,9 @@ try {
     $albuns = []; 
 }
 
-// Inclui o cabeçalho e abre o main-container
-require_once 'header.php'; 
+
+// Restante do HTML/includes...
+require_once 'header.php';
 ?>
 
     <h1>Listagem de Álbuns</h1>
@@ -63,13 +97,13 @@ require_once 'header.php';
         elseif (isset($_GET['status']) && $_GET['status'] == 'excluido'): 
         ?>
             <p class="sucesso">Álbum excluído logicamente com sucesso.</p>
-        
+
         <?php 
         // NOVO: Mensagem de erro
         elseif (isset($_GET['status']) && strpos($_GET['status'], 'erro') !== false): 
         ?>
             <p class="erro">Erro ao processar a exclusão. Tente novamente.</p>
-            
+
         <?php endif; ?>
     
     <div class="  s-container">
@@ -142,6 +176,37 @@ require_once 'header.php';
         </table>
     <?php endif; ?>
 
-<?php
+    <?php if ($total_paginas > 1): ?>
+        <div class="pagination">
+            <?php 
+            // 1. Link para a página anterior
+            if ($pagina_atual > 1): 
+            ?>
+                <a href="index.php?p=<?php echo $pagina_atual - 1; ?>" class="page-link">Anterior</a>
+            <?php endif; ?>
+
+            <?php
+            // 2. Links para as páginas (Exibe um bloco de 5 páginas ao redor da atual)
+            $start = max(1, $pagina_atual - 2);
+            $end = min($total_paginas, $pagina_atual + 2);
+
+            for ($i = $start; $i <= $end; $i++):
+            ?>
+                <a href="index.php?p=<?php echo $i; ?>" 
+                   class="page-link <?php echo ($i == $pagina_atual) ? 'active' : ''; ?>">
+                    <?php echo $i; ?>
+                </a>
+            <?php endfor; ?>
+
+            <?php
+            // 3. Link para a próxima página
+            if ($pagina_atual < $total_paginas): 
+            ?>
+                <a href="index.php?p=<?php echo $pagina_atual + 1; ?>" class="page-link">Próxima</a>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
+    <?php
 // Inclui o fechamento do main-container, footer e scripts
 require_once 'footer.php';
+// ...
