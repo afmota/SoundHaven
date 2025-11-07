@@ -140,30 +140,115 @@ table td a {
     text-decoration: none !important;
 }
 
-.pagination { /* ... (CSS de Paginação) ... */ }
-.pagination .page-link { /* ... */ }
-.pagination .page-link:hover { /* ... */ }
-.pagination .page-link.active { /* ... */ }
+/* EFEITO LINHAS ZEBRADAS (melhora a leitura) */
+table tbody tr:nth-child(odd) {
+    background-color: #f8f9fa; /* Cinza bem claro para linhas ímpares */
+}
+
+/* Garante que as linhas pares continuem brancas */
+table tbody tr:nth-child(even) {
+    background-color: #ffffff; 
+}
+
+table tbody tr:hover {
+    background-color: #e2e6ea; /* Fica um pouco mais escuro no hover */
+    cursor: pointer;
+}
+
+.pagination {
+    /* Garante que os links fiquem lado a lado */
+    display: flex;
+    justify-content: center; /* Centraliza a paginação */
+    align-items: center;
+    margin-top: 25px; /* Espaço para respirar após a tabela */
+    gap: 8px; /* Espaçamento entre os botões de página */
+}
+
+.pagination .page-link {
+    display: block;
+    min-width: 30px; /* Largura mínima para botões pequenos */
+    height: 30px;
+    line-height: 30px; /* Centraliza o número verticalmente */
+    text-align: center;
+    text-decoration: none;
+    padding: 0 8px; /* Padding horizontal */
+    color: #007bff;
+    background-color: #ffffff;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.9em;
+    transition: all 0.2s;
+}
+
+.pagination .page-link:hover {
+    background-color: #e9ecef;
+    border-color: #007bff;
+}
+
+.pagination .page-link.active {
+    color: white;
+    background-color: #007bff;
+    border-color: #007bff;
+    font-weight: bold;
+    cursor: default;
+}
+
 
 /* ---------------------------------- */
 /* FORMULÁRIO DE EDIÇÃO/CRIAÇÃO (Vertical) */
 /* ---------------------------------- */
-.edit-form { /* ... (CSS do formulário de edição) ... */ }
-.edit-form label { /* ... */ }
-.edit-form input[type="text"], .edit-form input[type="date"], .edit-form select { /* ... */ }
+.edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    max-width: 500px;
+    margin: 20px auto;
+}
+
+.edit-form label {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #333;
+}
+
+.edit-form input[type="text"],
+.edit-form input[type="date"],
+.edit-form select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 1em;
+}
 
 /* ---------------------------------- */
 /* ESTILOS DE MENSAGENS E BOTÕES */
 /* ---------------------------------- */
-.sucesso, .erro, .alerta { /* ... */ }
-.save-button, .back-link { /* ... */ }
+.sucesso, .erro, .alerta {
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.save-button, .back-link {
+    display: inline-block;
+    padding: 10px 15px;
+    text-align: center;
+    font-weight: bold;
+    border-radius: 4px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.3s, opacity 0.3s;
+    border: none;
+}
 
 /* ---------------------------------- */
 /* PADRONIZAÇÃO DE INPUTS NOS FILTROS (dentro da Sidebar) */
-/* ---------------------------------- */
-
-/* ---------------------------------- */
-/* PADRONIZAÇÃO DE INPUTS NOS FILTROS - REVISADO */
 /* ---------------------------------- */
 
 .filters-container {

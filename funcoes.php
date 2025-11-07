@@ -12,6 +12,7 @@
  * @param ?int $tipo_filtro O ID do tipo de álbum (pode ser NULL ou int).
  * @param ?int $situacao_filtro O ID da situação (pode ser NULL ou int).
  * @param ?int $formato_filtro O ID do formato (pode ser NULL ou int).
+ * @param ?int $deletado_filtro O filtro de status de deleção (0, 1 ou -1).
  * @return void Imprime o HTML da tabela e da paginacao.
  */
 function renderizar_tabela(
@@ -22,7 +23,8 @@ function renderizar_tabela(
     ?int $artista_filtro = null, 
     ?int $tipo_filtro = null, 
     ?int $situacao_filtro = null, 
-    ?int $formato_filtro = null
+    ?int $formato_filtro = null,
+    ?int $deletado_filtro = 0 // NOVO: Padrão 0 para não quebrar a primeira carga
 ): void {
     if (empty($albuns)): ?>
         <p class="alerta">Nenhum álbum encontrado com os filtros aplicados.</p>
@@ -54,11 +56,20 @@ function renderizar_tabela(
                             <a href="editar_album.php?id=<?php echo $album['id']; ?>" title="Editar Álbum">
                                 <i class="fa-solid fa-pencil" style="color: #007bff; cursor: pointer;"></i>
                             </a>
-                            <a href="excluir.php?id=<?php echo $album['id']; ?>" 
-                                title="Excluir Álbum" 
-                                onclick="return confirm('Tem certeza que deseja marcar este álbum (ID: <?php echo $album['id']; ?>) como excluído?');">
-                                <i class="fa-solid fa-trash-can" style="color: #dc3545; cursor: pointer; margin-left: 8px;"></i>
-                            </a>
+                            
+                            <?php if (($album['deletado'] ?? 0) == 1): ?>
+                                <a href="reativar.php?id=<?php echo $album['id']; ?>" 
+                                    title="Reativar Álbum" 
+                                    onclick="return confirm('Tem certeza que deseja reativar este álbum (ID: <?php echo $album['id']; ?>)?');">
+                                    <i class="fa-solid fa-redo" style="color: #28a745; cursor: pointer; margin-left: 8px;"></i>
+                                </a>
+                            <?php else: ?>
+                                <a href="excluir.php?id=<?php echo $album['id']; ?>" 
+                                    title="Excluir Álbum" 
+                                    onclick="return confirm('Tem certeza que deseja marcar este álbum (ID: <?php echo $album['id']; ?>) como excluído?');">
+                                    <i class="fa-solid fa-trash-can" style="color: #dc3545; cursor: pointer; margin-left: 8px;"></i>
+                                </a>
+                            <?php endif; ?>
                         </td> 
                     </tr>
                 <?php endforeach; ?>
@@ -85,6 +96,11 @@ function renderizar_tabela(
                 if ($formato_filtro) {
                     // Cuidado: Se for -1 (Sem Formato), precisa manter o valor para que o index.php entenda
                     $query_params .= '&filter_formato=' . $formato_filtro;
+                }
+                
+                // NOVO: Manter o filtro de deleção na paginação (se não for o padrão 0)
+                if ($deletado_filtro !== 0 && $deletado_filtro !== null) {
+                    $query_params .= '&filter_deletado=' . $deletado_filtro;
                 }
                 
                 // 1. Link para a página anterior

@@ -3,7 +3,7 @@
 // Listagem de álbuns com Paginação e Filtros via Submissão GET (Sidebar Layout)
 
 require_once 'conexao.php';
-require_once 'funcoes.php'; // Contém a função renderizar_tabela()
+require_once 'funcoes.php'; 
 
 // --- CONFIGURAÇÃO DE PAGINAÇÃO E FILTROS ---
 $limite_por_pagina = 25; 
@@ -16,11 +16,30 @@ $tipo_filtro = filter_input(INPUT_GET, 'filter_tipo', FILTER_VALIDATE_INT);
 $situacao_filtro = filter_input(INPUT_GET, 'filter_situacao', FILTER_VALIDATE_INT);
 $formato_filtro = filter_input(INPUT_GET, 'filter_formato', FILTER_VALIDATE_INT);
 
+// NOVO FILTRO: Status de Deleção (0: Ativos, 1: Excluídos, -1: Todos)
+$deletado_filtro = filter_input(INPUT_GET, 'filter_deletado', FILTER_VALIDATE_INT);
+// Se não vier nada na URL, o padrão é mostrar APENAS os ativos (0)
+if ($deletado_filtro === null) {
+    $deletado_filtro = 0;
+}
+
+
 // Inicializa arrays para a cláusula WHERE e para os parâmetros de segurança do PDO
-$where_condicoes = ['s.deletado = 0']; // Condição base
+$where_condicoes = [];
 $bind_params = [];
 
-// Adiciona filtros
+// Lógica para o Filtro de Status de Deleção:
+if ($deletado_filtro == 0) {
+    // PADRÃO: Mostrar apenas Ativos
+    $where_condicoes[] = "s.deletado = 0";
+} elseif ($deletado_filtro == 1) {
+    // Mostrar apenas Excluídos
+    $where_condicoes[] = "s.deletado = 1";
+} 
+// Se $deletado_filtro == -1 (Todos), não adicionamos nenhuma condição "deletado",
+// o que permite listar todos.
+
+// Adiciona os demais filtros
 if (!empty($termo_busca)) {
     $where_condicoes[] = "s.titulo LIKE :titulo";
     $bind_params[':titulo'] = '%' . $termo_busca . '%';
@@ -47,7 +66,7 @@ if ($formato_filtro) {
 }
 
 // Lógica de reset de página ao aplicar novo filtro
-$has_filter = !empty($termo_busca) || $artista_filtro || $tipo_filtro || $situacao_filtro || $formato_filtro;
+$has_filter = !empty($termo_busca) || $artista_filtro || $tipo_filtro || $situacao_filtro || $formato_filtro || $deletado_filtro != 0;
 if ($has_filter && !isset($_GET['p'])) {
     $pagina_atual = 1;
 }
@@ -58,7 +77,10 @@ $offset = ($pagina_atual - 1) * $limite_por_pagina;
 
 
 // --- CONSULTA 1: NÚMERO TOTAL DE REGISTROS (COM FILTROS) ---
-$sql_total = "SELECT COUNT(s.id) AS total FROM store AS s WHERE " . implode(' AND ', $where_condicoes);
+// Adiciona uma condição 'dummy' se o array estiver vazio para evitar erro SQL
+$where_clause = empty($where_condicoes) ? '1=1' : implode(' AND ', $where_condicoes);
+
+$sql_total = "SELECT COUNT(s.id) AS total FROM store AS s WHERE " . $where_clause;
 $total_registros = 0;
 
 try {
@@ -105,13 +127,14 @@ $sql = "SELECT
             DATE_FORMAT(s.data_lancamento, '%d/%m/%Y') AS data_lancamento, 
             t.descricao AS tipo,
             sit.descricao AS status,
-            f.descricao AS formato
+            f.descricao AS formato,
+            s.deletado /* NOVO: Adiciona o campo deletado para controle de ações */
         FROM store AS s
             LEFT JOIN artistas AS a ON s.artista_id = a.id 
             LEFT JOIN tipo_album AS t ON s.tipo_id = t.id
             LEFT JOIN situacao AS sit ON s.situacao = sit.id
             LEFT JOIN formatos AS f ON s.formato_id = f.id
-        WHERE " . implode(' AND ', $where_condicoes) . "
+        WHERE " . $where_clause . "
         ORDER BY s.data_lancamento DESC
         LIMIT :limite OFFSET :offset"; 
 
@@ -148,7 +171,7 @@ require_once 'header.php';
             <h1>Listagem de Álbuns (Total: <?php echo $total_registros; ?>)</h1>
 
             <?php 
-            // Mensagens de Status (Criação, Edição, Exclusão)
+            // Mensagens de Status (Criação, Edição, Exclusão, Reativação)
             if (isset($_GET['status']) && $_GET['status'] == 'editado'): 
             ?>
                 <p class="sucesso">Álbum "<?php echo htmlspecialchars($_GET['album']); ?>" atualizado com sucesso!</p>
@@ -161,14 +184,17 @@ require_once 'header.php';
             ?>
                 <p class="sucesso">Álbum excluído logicamente com sucesso.</p>
             <?php 
+            elseif (isset($_GET['status']) && $_GET['status'] == 'reativado'): 
+            ?>
+                <p class="sucesso">Álbum reativado com sucesso!</p>
+            <?php 
             elseif (isset($_GET['status']) && strpos($_GET['status'], 'erro') !== false): 
             ?>
                 <p class="erro">Erro ao processar a operação. Tente novamente.</p>
             <?php endif; ?>
 
             <?php 
-            // CORREÇÃO: Passando todos os filtros para a função
-            renderizar_tabela($albuns, $pagina_atual, $total_paginas, $termo_busca, $artista_filtro, $tipo_filtro, $situacao_filtro, $formato_filtro);
+            renderizar_tabela($albuns, $pagina_atual, $total_paginas, $termo_busca, $artista_filtro, $tipo_filtro, $situacao_filtro, $formato_filtro, $deletado_filtro);
             ?>
 
         </main>
@@ -178,6 +204,21 @@ require_once 'header.php';
             <h3>Filtros de Busca</h3>
             
             <form method="GET" action="index.php" class="filters-container">
+                
+                <div class="search-container">
+                    <label for="filter_deletado">Exibir:</label>
+                    <select id="filter_deletado" name="filter_deletado">
+                        <option value="0" <?php echo ($deletado_filtro == 0) ? 'selected' : ''; ?>>
+                            Ativos
+                        </option>
+                        <option value="1" <?php echo ($deletado_filtro == 1) ? 'selected' : ''; ?>>
+                            Excluídos
+                        </option>
+                        <option value="-1" <?php echo ($deletado_filtro == -1) ? 'selected' : ''; ?>>
+                            Todos
+                        </option>
+                    </select>
+                </div>
                 
                 <div class="search-container">
                     <label for="search_titulo">Buscar Título:</label>
@@ -251,5 +292,9 @@ require_once 'header.php';
 
         </aside>
 
-    </div> </div> <?php
+    </div> 
+
+</div> 
+
+<?php
 require_once 'footer.php';

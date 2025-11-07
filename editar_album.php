@@ -1,5 +1,5 @@
 <?php
-// Arquivo: editar.php (Encarnação Modular)
+// Arquivo: editar_album.php
 
 require_once 'conexao.php';
 
@@ -36,10 +36,10 @@ try {
     // --- CONSULTA DO ÁLBUM A SER EDITADO ---
     
     $sql_album = "SELECT 
-                    titulo, artista_id, data_lancamento, tipo_id, situacao, formato_id 
-                  FROM store 
-                  WHERE id = :id";
-                  
+                      titulo, artista_id, data_lancamento, tipo_id, situacao, formato_id 
+                    FROM store 
+                    WHERE id = :id";
+                    
     $stmt_album = $pdo->prepare($sql_album);
     $stmt_album->bindParam(':id', $album_id, PDO::PARAM_INT);
     $stmt_album->execute();
@@ -64,18 +64,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $album) {
     $novo_artista_id = filter_input(INPUT_POST, 'artista_id', FILTER_VALIDATE_INT);
     $novo_tipo_id = filter_input(INPUT_POST, 'tipo_id', FILTER_VALIDATE_INT);
     $nova_situacao_id = filter_input(INPUT_POST, 'situacao_id', FILTER_VALIDATE_INT);
+    
+    // NOVO TRATAMENTO PARA FORMATO:
+    // Pega o valor enviado. Se for string vazia (""), FILTER_VALIDATE_INT retorna false.
     $novo_formato_id = filter_input(INPUT_POST, 'formato_id', FILTER_VALIDATE_INT);
+
+    // CORREÇÃO: Se não for um ID válido (o que acontece quando a opção vazia é selecionada)
+    // nós forçamos o valor para NULL
+    if ($novo_formato_id === false || $novo_formato_id === 0) {
+        $novo_formato_id = null;
+    }
+    // FIM NOVO TRATAMENTO
     
     // Monta a query de UPDATE
     $sql_update = "UPDATE store SET 
-                    titulo = :titulo,
-                    artista_id = :artista_id,
-                    data_lancamento = :data_lancamento,
-                    tipo_id = :tipo_id,
-                    situacao = :situacao_id,
-                    formato_id = :formato_id,
-                    atualizado_em = NOW()
-                   WHERE id = :id";
+                      titulo = :titulo,
+                      artista_id = :artista_id,
+                      data_lancamento = :data_lancamento,
+                      tipo_id = :tipo_id,
+                      situacao = :situacao_id,
+                      formato_id = :formato_id,
+                      atualizado_em = NOW()
+                      WHERE id = :id";
 
     try {
         $stmt_update = $pdo->prepare($sql_update);
@@ -85,7 +95,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $album) {
         $stmt_update->bindParam(':data_lancamento', $nova_data);
         $stmt_update->bindParam(':tipo_id', $novo_tipo_id, PDO::PARAM_INT);
         $stmt_update->bindParam(':situacao_id', $nova_situacao_id, PDO::PARAM_INT);
-        $stmt_update->bindParam(':formato_id', $novo_formato_id, PDO::PARAM_INT);
+        
+        // NOVO BINDING: Usar PDO::PARAM_NULL se o valor for NULL
+        $stmt_update->bindParam(':formato_id', $novo_formato_id, ($novo_formato_id === null ? PDO::PARAM_NULL : PDO::PARAM_INT));
+        
         $stmt_update->bindParam(':id', $album_id, PDO::PARAM_INT);
         
         $stmt_update->execute();
@@ -111,7 +124,7 @@ require_once 'header.php';
     <?php endif; ?>
 
     <?php if ($album): ?>
-    <form method="POST" action="editar.php?id=<?php echo $album_id; ?>" class="edit-form">
+    <form method="POST" action="editar_album.php?id=<?php echo $album_id; ?>" class="edit-form">
 
         <label for="titulo">Título:</label>
         <input type="text" id="titulo" name="titulo" 
@@ -152,10 +165,14 @@ require_once 'header.php';
         </select>
         
         <label for="formato_id">Formato:</label>
-        <select id="formato_id" name="formato_id" required>
+        <select id="formato_id" name="formato_id"> <option value="" 
+                    <?php echo (empty($album['formato_id'])) ? 'selected' : ''; ?>>
+                -- Não Informado --
+            </option>
+            
             <?php foreach ($formatos as $f): ?>
                 <option value="<?php echo $f['id']; ?>" 
-                        <?php echo ($f['id'] == $album['formato_id']) ? 'selected' : ''; ?>>
+                        <?php echo ($f['formato_id'] == $album['formato_id']) ? 'selected' : ''; ?>>
                     <?php echo htmlspecialchars($f['descricao']); ?>
                 </option>
             <?php endforeach; ?>
