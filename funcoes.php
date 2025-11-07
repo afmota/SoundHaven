@@ -4,16 +4,26 @@
 
 /**
  * Renderiza a tabela de álbuns e os links de paginação.
- * Esta função deve ser chamada pelo index.php e pelo script AJAX.
- *
  * @param array $albuns Array de álbuns para exibir.
  * @param int $pagina_atual A página que está sendo exibida.
  * @param int $total_paginas O número total de páginas.
- * @param string $termo_busca O termo de busca atual (para manter nos links de paginacao).
- * @param int $artista_filtro O ID do artista selecionado (para manter nos links de paginacao).
+ * @param ?string $termo_busca O termo de busca atual (pode ser NULL ou string).
+ * @param ?int $artista_filtro O ID do artista selecionado (pode ser NULL ou int).
+ * @param ?int $tipo_filtro O ID do tipo de álbum (pode ser NULL ou int).
+ * @param ?int $situacao_filtro O ID da situação (pode ser NULL ou int).
+ * @param ?int $formato_filtro O ID do formato (pode ser NULL ou int).
  * @return void Imprime o HTML da tabela e da paginacao.
  */
-function renderizar_tabela(array $albuns, int $pagina_atual, int $total_paginas, ?string $termo_busca = '', ?int $artista_filtro = null): void {
+function renderizar_tabela(
+    array $albuns, 
+    int $pagina_atual, 
+    int $total_paginas, 
+    ?string $termo_busca = '', 
+    ?int $artista_filtro = null, 
+    ?int $tipo_filtro = null, 
+    ?int $situacao_filtro = null, 
+    ?int $formato_filtro = null
+): void {
     if (empty($albuns)): ?>
         <p class="alerta">Nenhum álbum encontrado com os filtros aplicados.</p>
     <?php else: ?>
@@ -58,13 +68,23 @@ function renderizar_tabela(array $albuns, int $pagina_atual, int $total_paginas,
         <?php if ($total_paginas > 1): ?>
             <div class="pagination">
                 <?php
-                // Parâmetros de URL a serem mantidos (termo de busca, artista)
+                // Parâmetros de URL a serem mantidos (filtros)
                 $query_params = '';
                 if (!empty($termo_busca)) {
                     $query_params .= '&search_titulo=' . urlencode($termo_busca);
                 }
                 if ($artista_filtro) {
                     $query_params .= '&filter_artista=' . $artista_filtro;
+                }
+                if ($tipo_filtro) {
+                    $query_params .= '&filter_tipo=' . $tipo_filtro;
+                }
+                if ($situacao_filtro) {
+                    $query_params .= '&filter_situacao=' . $situacao_filtro;
+                }
+                if ($formato_filtro) {
+                    // Cuidado: Se for -1 (Sem Formato), precisa manter o valor para que o index.php entenda
+                    $query_params .= '&filter_formato=' . $formato_filtro;
                 }
                 
                 // 1. Link para a página anterior

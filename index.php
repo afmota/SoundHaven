@@ -1,6 +1,6 @@
 <?php
 // Arquivo: index.php
-// Listagem de álbuns com Paginação e Filtros via Submissão GET (Simples e Performático)
+// Listagem de álbuns com Paginação e Filtros via Submissão GET (Sidebar Layout)
 
 require_once 'conexao.php';
 require_once 'funcoes.php'; // Contém a função renderizar_tabela()
@@ -10,47 +10,61 @@ $limite_por_pagina = 25;
 $pagina_atual = isset($_GET['p']) ? (int)$_GET['p'] : 1; 
 
 // Pega e sanitiza os filtros da URL
-$termo_busca = filter_input(INPUT_GET, 'search_titulo', FILTER_SANITIZE_SPECIAL_CHARS) ?? ''; // <-- NOVO: Usa o operador '??' (null coalescing)
+$termo_busca = filter_input(INPUT_GET, 'search_titulo', FILTER_SANITIZE_SPECIAL_CHARS) ?? '';
 $artista_filtro = filter_input(INPUT_GET, 'filter_artista', FILTER_VALIDATE_INT);
+$tipo_filtro = filter_input(INPUT_GET, 'filter_tipo', FILTER_VALIDATE_INT);
+$situacao_filtro = filter_input(INPUT_GET, 'filter_situacao', FILTER_VALIDATE_INT);
+$formato_filtro = filter_input(INPUT_GET, 'filter_formato', FILTER_VALIDATE_INT);
 
 // Inicializa arrays para a cláusula WHERE e para os parâmetros de segurança do PDO
-$where_condicoes = ['s.deletado = 0']; // Condição base: mostrar apenas não deletados
+$where_condicoes = ['s.deletado = 0']; // Condição base
 $bind_params = [];
 
-// Adiciona filtro por Título
+// Adiciona filtros
 if (!empty($termo_busca)) {
     $where_condicoes[] = "s.titulo LIKE :titulo";
     $bind_params[':titulo'] = '%' . $termo_busca . '%';
 }
-
-// Adiciona filtro por Artista
 if ($artista_filtro) {
     $where_condicoes[] = "s.artista_id = :artista_id";
     $bind_params[':artista_id'] = $artista_filtro;
 }
+if ($tipo_filtro) {
+    $where_condicoes[] = "s.tipo_id = :tipo_id";
+    $bind_params[':tipo_id'] = $tipo_filtro;
+}
+if ($situacao_filtro) {
+    $where_condicoes[] = "s.situacao = :situacao_id";
+    $bind_params[':situacao_id'] = $situacao_filtro;
+}
+if ($formato_filtro) {
+    if ($formato_filtro == -1) { // -1 significa 'Sem Formato' (NULL)
+        $where_condicoes[] = "s.formato_id IS NULL";
+    } elseif ($formato_filtro > 0) {
+        $where_condicoes[] = "s.formato_id = :formato_id";
+        $bind_params[':formato_id'] = $formato_filtro;
+    }
+}
 
-// Se algum filtro foi aplicado, garantimos que a página atual seja 1
-// (Apenas se não houver um 'p' na URL, para não atrapalhar a navegação já filtrada)
-if ((!empty($termo_busca) || $artista_filtro) && !isset($_GET['p'])) {
+// Lógica de reset de página ao aplicar novo filtro
+$has_filter = !empty($termo_busca) || $artista_filtro || $tipo_filtro || $situacao_filtro || $formato_filtro;
+if ($has_filter && !isset($_GET['p'])) {
     $pagina_atual = 1;
 }
 if ($pagina_atual < 1) {
     $pagina_atual = 1;
 }
-
-// Calcula o OFFSET (o ponto de partida no banco)
 $offset = ($pagina_atual - 1) * $limite_por_pagina;
 
 
-// --- CONSULTA 1: BUSCA O NÚMERO TOTAL DE REGISTROS (COM OS FILTROS APLICADOS) ---
+// --- CONSULTA 1: NÚMERO TOTAL DE REGISTROS (COM FILTROS) ---
 $sql_total = "SELECT COUNT(s.id) AS total FROM store AS s WHERE " . implode(' AND ', $where_condicoes);
 $total_registros = 0;
 
 try {
     $stmt_total = $pdo->prepare($sql_total);
-    // Bind dos parâmetros para a contagem total
     foreach ($bind_params as $param => $value) {
-        $type = (strpos($param, 'artista') !== false) ? PDO::PARAM_INT : PDO::PARAM_STR;
+        $type = (strpos($param, 'id') !== false) ? PDO::PARAM_INT : PDO::PARAM_STR;
         $stmt_total->bindParam($param, $bind_params[$param], $type);
     }
     
@@ -62,22 +76,27 @@ try {
     $erro_total = "Erro ao contar registros: " . $e->getMessage();
 }
 
-// Calcula o número total de páginas
 $total_paginas = ceil($total_registros / $limite_por_pagina);
 
 
-// --- CONSULTA 2: BUSCA TODOS OS ARTISTAS (para popular o dropdown) ---
+// --- CONSULTA 2: BUSCA DADOS RELACIONADOS (Dropdowns) ---
 $sql_artistas = "SELECT id, nome FROM artistas ORDER BY nome ASC";
-$artistas = [];
+$sql_tipos = "SELECT id, descricao FROM tipo_album ORDER BY descricao ASC";
+$sql_situacao = "SELECT id, descricao FROM situacao ORDER BY descricao ASC";
+$sql_formatos = "SELECT id, descricao FROM formatos ORDER BY descricao ASC";
+$artistas = $tipos = $situacoes = $formatos = [];
+
 try {
-    $stmt_artistas = $pdo->query($sql_artistas); 
-    $artistas = $stmt_artistas->fetchAll(PDO::FETCH_ASSOC);
+    $stmt_artistas = $pdo->query($sql_artistas); $artistas = $stmt_artistas->fetchAll(PDO::FETCH_ASSOC);
+    $stmt_tipos = $pdo->query($sql_tipos); $tipos = $stmt_tipos->fetchAll(PDO::FETCH_ASSOC);
+    $stmt_situacao = $pdo->query($sql_situacao); $situacoes = $stmt_situacao->fetchAll(PDO::FETCH_ASSOC);
+    $stmt_formatos = $pdo->query($sql_formatos); $formatos = $stmt_formatos->fetchAll(PDO::FETCH_ASSOC);
 } catch (\PDOException $e) {
-    $erro_artistas = "Erro ao buscar artistas: " . $e->getMessage();
+    // Tratamento de erro silencioso
 }
 
 
-// --- CONSULTA 3: BUSCA A LISTAGEM PRINCIPAL (COM LIMIT, OFFSET e FILTROS) ---
+// --- CONSULTA 3: BUSCA A LISTAGEM PRINCIPAL ---
 
 $sql = "SELECT
             s.id, 
@@ -99,13 +118,13 @@ $sql = "SELECT
 try {
     $stmt = $pdo->prepare($sql); 
     
-    // Bind dos parâmetros LIMIT e OFFSET
+    // Bind de LIMIT e OFFSET
     $stmt->bindParam(':limite', $limite_por_pagina, PDO::PARAM_INT);
     $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
 
-    // Bind de todos os parâmetros de filtro (novamente, por segurança)
+    // Bind dos parâmetros de filtro
     foreach ($bind_params as $param => $value) {
-        $type = (strpos($param, 'artista') !== false) ? PDO::PARAM_INT : PDO::PARAM_STR;
+        $type = (strpos($param, 'id') !== false) ? PDO::PARAM_INT : PDO::PARAM_STR;
         $stmt->bindParam($param, $bind_params[$param], $type);
     }
     
@@ -121,63 +140,116 @@ try {
 require_once 'header.php'; 
 ?>
 
-    <h1>Listagem de Álbuns (Total: <?php echo $total_registros; ?>)</h1>
-
-    <?php 
-    // Mensagens de Status (Criação, Edição, Exclusão)
-    if (isset($_GET['status']) && $_GET['status'] == 'editado'): 
-    ?>
-        <p class="sucesso">Álbum "<?php echo htmlspecialchars($_GET['album']); ?>" atualizado com sucesso!</p>
-    <?php 
-    elseif (isset($_GET['status']) && $_GET['status'] == 'criado'): 
-    ?>
-        <p class="sucesso">Álbum "<?php echo htmlspecialchars($_GET['album']); ?>" adicionado com sucesso!</p>
-    <?php 
-    elseif (isset($_GET['status']) && $_GET['status'] == 'excluido'): 
-    ?>
-        <p class="sucesso">Álbum excluído logicamente com sucesso.</p>
-    <?php 
-    elseif (isset($_GET['status']) && strpos($_GET['status'], 'erro') !== false): 
-    ?>
-        <p class="erro">Erro ao processar a operação. Tente novamente.</p>
-    <?php endif; ?>
-
-    <form method="GET" action="index.php" class="filters-container">
+<div class="container">
+    <div class="main-layout"> 
         
-        <div class="search-container">
-            <label for="search_titulo">Buscar Título do Álbum:</label>
-            <input type="text" id="search_titulo" name="search_titulo" 
-                   placeholder="Digite o título do álbum..." autocomplete="off"
-                   value="<?php echo htmlspecialchars($termo_busca); ?>">
-        </div>
+        <main class="content-area">
+            
+            <h1>Listagem de Álbuns (Total: <?php echo $total_registros; ?>)</h1>
 
-        <div class="search-container">
-            <label for="filter_artista">Filtrar por Artista:</label>
-            <select id="filter_artista" name="filter_artista">
-                <option value="">-- Selecione um Artista --</option>
-                <?php if (!empty($artistas)): ?>
-                    <?php foreach ($artistas as $artista): ?>
-                        <option value="<?php echo htmlspecialchars($artista['id']); ?>"
-                                <?php echo ($artista_filtro == $artista['id']) ? 'selected' : ''; ?>>
-                            <?php echo htmlspecialchars($artista['nome']); ?>
+            <?php 
+            // Mensagens de Status (Criação, Edição, Exclusão)
+            if (isset($_GET['status']) && $_GET['status'] == 'editado'): 
+            ?>
+                <p class="sucesso">Álbum "<?php echo htmlspecialchars($_GET['album']); ?>" atualizado com sucesso!</p>
+            <?php 
+            elseif (isset($_GET['status']) && $_GET['status'] == 'criado'): 
+            ?>
+                <p class="sucesso">Álbum "<?php echo htmlspecialchars($_GET['album']); ?>" adicionado com sucesso!</p>
+            <?php 
+            elseif (isset($_GET['status']) && $_GET['status'] == 'excluido'): 
+            ?>
+                <p class="sucesso">Álbum excluído logicamente com sucesso.</p>
+            <?php 
+            elseif (isset($_GET['status']) && strpos($_GET['status'], 'erro') !== false): 
+            ?>
+                <p class="erro">Erro ao processar a operação. Tente novamente.</p>
+            <?php endif; ?>
+
+            <?php 
+            // CORREÇÃO: Passando todos os filtros para a função
+            renderizar_tabela($albuns, $pagina_atual, $total_paginas, $termo_busca, $artista_filtro, $tipo_filtro, $situacao_filtro, $formato_filtro);
+            ?>
+
+        </main>
+        
+        <aside class="sidebar-filters">
+
+            <h3>Filtros de Busca</h3>
+            
+            <form method="GET" action="index.php" class="filters-container">
+                
+                <div class="search-container">
+                    <label for="search_titulo">Buscar Título:</label>
+                    <input type="text" id="search_titulo" name="search_titulo" 
+                           value="<?php echo htmlspecialchars($termo_busca); ?>">
+                </div>
+
+                <div class="search-container">
+                    <label for="filter_artista">Artista:</label>
+                    <select id="filter_artista" name="filter_artista">
+                        <option value="">-- Todos --</option>
+                        <?php foreach ($artistas as $artista): ?>
+                            <option value="<?php echo htmlspecialchars($artista['id']); ?>"
+                                    <?php echo ($artista_filtro == $artista['id']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($artista['nome']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
+                <div class="search-container">
+                    <label for="filter_tipo">Tipo:</label>
+                    <select id="filter_tipo" name="filter_tipo">
+                        <option value="">-- Todos --</option>
+                        <?php foreach ($tipos as $tipo): ?>
+                            <option value="<?php echo htmlspecialchars($tipo['id']); ?>"
+                                    <?php echo ($tipo_filtro == $tipo['id']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($tipo['descricao']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div class="search-container">
+                    <label for="filter_situacao">Situação:</label>
+                    <select id="filter_situacao" name="filter_situacao">
+                        <option value="">-- Todas --</option>
+                        <?php foreach ($situacoes as $situacao): ?>
+                            <option value="<?php echo htmlspecialchars($situacao['id']); ?>"
+                                    <?php echo ($situacao_filtro == $situacao['id']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($situacao['descricao']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
+                <div class="search-container">
+                    <label for="filter_formato">Formato:</label>
+                    <select id="filter_formato" name="filter_formato">
+                        <option value="">-- Todos --</option>
+                        <option value="-1" <?php echo ($formato_filtro == -1) ? 'selected' : ''; ?>>
+                            Sem Formato
                         </option>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </select>
-        </div>
-        
-        <button type="submit" class="save-button" style="margin-top: 25px; height: 40px; background-color: #007bff;">Aplicar Filtros</button>
-        
-        <?php if (!empty($termo_busca) || $artista_filtro): ?>
-            <a href="index.php" class="back-link" style="margin-top: 25px; height: 40px; display: flex; align-items: center; justify-content: center;">Limpar Filtros</a>
-        <?php endif; ?>
-        
-    </form>
+                        <?php foreach ($formatos as $formato): ?>
+                            <option value="<?php echo htmlspecialchars($formato['id']); ?>"
+                                    <?php echo ($formato_filtro == $formato['id']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($formato['descricao']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                    <button type="submit" class="save-button" style="height: 40px; background-color: #007bff; flex-shrink: 0;">Aplicar Filtros</button>
+                    <?php if ($has_filter): ?>
+                        <a href="index.php" class="back-link" style="height: 40px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">Limpar Filtros</a>
+                    <?php endif; ?>
+                </div>
+                
+            </form>
 
-    <?php 
-    renderizar_tabela($albuns, $pagina_atual, $total_paginas, $termo_busca, $artista_filtro);
-    ?>
+        </aside>
 
-<?php
-// FIM DO HTML
+    </div> </div> <?php
 require_once 'footer.php';
