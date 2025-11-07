@@ -1,5 +1,5 @@
 <?php
-// Arquivo: editar.php
+// Arquivo: editar.php (Encarnação Modular)
 
 require_once 'conexao.php';
 
@@ -13,15 +13,13 @@ $erro = null;
 $album = null;
 
 // --- CONSULTA DE DADOS RELACIONADOS (para popular os <select>s) ---
-// Note que você pode reutilizar as consultas do index.php aqui
-
 $sql_artistas = "SELECT id, nome FROM artistas ORDER BY nome ASC";
 $sql_tipos = "SELECT id, descricao FROM tipo_album ORDER BY descricao ASC";
 $sql_situacao = "SELECT id, descricao FROM situacao ORDER BY descricao ASC";
 $sql_formatos = "SELECT id, descricao FROM formatos ORDER BY descricao ASC";
 
 try {
-    // 2. Executa as consultas de dados relacionados
+    // Executa as consultas de dados relacionados
     $stmt_artistas = $pdo->query($sql_artistas);
     $artistas = $stmt_artistas->fetchAll(PDO::FETCH_ASSOC);
 
@@ -58,17 +56,17 @@ try {
 // --- PROCESSAMENTO DO FORMULÁRIO (UPDATE) ---
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $album) {
-    // 1. Sanitiza e pega os dados do POST (Simplificado para os principais campos)
+    // Pega e sanitiza os dados do POST
     $novo_titulo = filter_input(INPUT_POST, 'titulo', FILTER_SANITIZE_SPECIAL_CHARS);
     $nova_data = filter_input(INPUT_POST, 'data_lancamento', FILTER_SANITIZE_SPECIAL_CHARS);
     
-    // 2. Pega os IDs (garantindo que sejam inteiros)
+    // Pega os IDs (garantindo que sejam inteiros)
     $novo_artista_id = filter_input(INPUT_POST, 'artista_id', FILTER_VALIDATE_INT);
     $novo_tipo_id = filter_input(INPUT_POST, 'tipo_id', FILTER_VALIDATE_INT);
     $nova_situacao_id = filter_input(INPUT_POST, 'situacao_id', FILTER_VALIDATE_INT);
     $novo_formato_id = filter_input(INPUT_POST, 'formato_id', FILTER_VALIDATE_INT);
     
-    // 3. Monta a query de UPDATE (Com segurança total via Prepared Statements)
+    // Monta a query de UPDATE
     $sql_update = "UPDATE store SET 
                     titulo = :titulo,
                     artista_id = :artista_id,
@@ -100,18 +98,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $album) {
         $erro = "Erro ao salvar alterações: " . $e->getMessage();
     }
 }
+
+// Inclui o cabeçalho e abre o main-container
+require_once 'header.php'; 
 ?>
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <title>Editar Álbum: <?php echo htmlspecialchars($album['titulo'] ?? $album_id); ?></title>
-    <link rel="stylesheet" href="estilos.css">
-</head>
-<body>
 
     <h1>Editar Álbum</h1>
-    <hr>
     <a href="index.php" class="back-link">Voltar para a Lista</a>
 
     <?php if ($erro): ?>
@@ -173,5 +165,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $album) {
     </form>
     <?php endif; ?>
 
-</body>
-</html>
+<?php
+// Inclui o fechamento do main-container, footer e scripts
+require_once 'footer.php';

@@ -1,7 +1,7 @@
 <?php
-// Arquivo: index.php (VERSÃO ATUALIZADA)
+// Arquivo: index.php (Encarnação Modular)
 
-// 1. Inclui o arquivo de conexão
+// Inclui o arquivo de conexão
 require_once 'conexao.php';
 
 // --- CONSULTA 1: BUSCA TODOS OS ARTISTAS (para popular o dropdown) ---
@@ -9,17 +9,15 @@ $sql_artistas = "SELECT id, nome FROM artistas ORDER BY nome ASC";
 $artistas = [];
 
 try {
-    $stmt_artistas = $pdo->prepare($sql_artistas); 
-    $stmt_artistas->execute();
-    $artistas = $stmt_artistas->fetchAll(PDO::FETCH_ASSOC); // Obtém a lista de artistas
+    $stmt_artistas = $pdo->query($sql_artistas); 
+    $artistas = $stmt_artistas->fetchAll(PDO::FETCH_ASSOC);
 
 } catch (\PDOException $e) {
-    // Se der erro aqui, a página principal ainda deve carregar
     $erro_artistas = "Erro ao buscar artistas: " . $e->getMessage();
 }
 
 
-// --- CONSULTA 2: BUSCA A LISTAGEM PRINCIPAL (Sua Query Original) ---
+// --- CONSULTA 2: BUSCA A LISTAGEM PRINCIPAL (Carga Inicial) ---
 
 $sql = "SELECT
             s.id, 
@@ -47,31 +45,22 @@ try {
     $erro = "Erro ao buscar álbuns: " . $e->getMessage();
     $albuns = []; 
 }
+
+// Inclui o cabeçalho e abre o main-container
+require_once 'header.php'; 
 ?>
 
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    
-    <title>Acervo Digital</title>
-
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="estilos.css">
-</head>
-<body>
-
-    <h1>Acervo Digital</h1>
-    <hr>
+    <h1>Listagem de Álbuns</h1>
 
     <?php 
-    // NOVO: Mensagem de sucesso após edição
+    // Mensagem de sucesso após edição
     if (isset($_GET['status']) && $_GET['status'] == 'editado'): 
     ?>
         <p class="sucesso">Álbum "<?php echo htmlspecialchars($_GET['album']); ?>" atualizado com sucesso!</p>
     <?php endif; ?>
-    
+
     <div class="filters-container">
+    
         <div class="search-container">
             <label for="search_titulo">Buscar Título do Álbum:</label>
             <input type="text" id="search_titulo" name="search_titulo" placeholder="Digite o título do álbum..." autocomplete="off">
@@ -122,21 +111,19 @@ try {
                     <td><?php echo htmlspecialchars($album['tipo'] ?? 'Não Classificado'); ?></td>
                     <td><?php echo htmlspecialchars($album['status'] ?? 'Desconhecida'); ?></td>
                     <td><?php echo htmlspecialchars($album['formato'] ?? 'Sem Formato'); ?></td>
-                    <td>
-                        <td><?php echo htmlspecialchars($album['formato'] ?? 'Sem Formato'); ?></td>
-                        <td>
-                            <a href="editar.php?id=<?php echo $album['id']; ?>" title="Editar Álbum">
+                    
+                                        <td>
+                        <a href="editar.php?id=<?php echo $album['id']; ?>" title="Editar Álbum">
                             <i class="fa-solid fa-pencil" style="color: #007bff; cursor: pointer;"></i>
-                            <i class="fa-solid fa-trash-can" style="color: #dc3545; cursor: pointer; margin-left: 8px;" title="Excluir"></i>
+                        </a>
+                        <i class="fa-solid fa-trash-can" style="color: #dc3545; cursor: pointer; margin-left: 8px;" title="Excluir"></i>
                     </td> 
                 </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
     <?php endif; ?>
-    
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    
-    <script src="filtro.js"></script>
-</body>
-</html>
+
+<?php
+// Inclui o fechamento do main-container, footer e scripts
+require_once 'footer.php';
