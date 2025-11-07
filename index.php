@@ -53,13 +53,26 @@ require_once 'header.php';
     <h1>Listagem de Álbuns</h1>
 
     <?php 
-    // Mensagem de sucesso após edição
-    if (isset($_GET['status']) && $_GET['status'] == 'editado'): 
-    ?>
-        <p class="sucesso">Álbum "<?php echo htmlspecialchars($_GET['album']); ?>" atualizado com sucesso!</p>
-    <?php endif; ?>
-
-    <div class="filters-container">
+        // Mensagem de sucesso após edição
+        if (isset($_GET['status']) && $_GET['status'] == 'editado'): 
+        ?>
+            <p class="sucesso">Álbum "<?php echo htmlspecialchars($_GET['album']); ?>" atualizado com sucesso!</p>
+        
+        <?php 
+        // NOVO: Mensagem de sucesso após exclusão
+        elseif (isset($_GET['status']) && $_GET['status'] == 'excluido'): 
+        ?>
+            <p class="sucesso">Álbum excluído logicamente com sucesso.</p>
+        
+        <?php 
+        // NOVO: Mensagem de erro
+        elseif (isset($_GET['status']) && strpos($_GET['status'], 'erro') !== false): 
+        ?>
+            <p class="erro">Erro ao processar a exclusão. Tente novamente.</p>
+            
+        <?php endif; ?>
+    
+    <div class="  s-container">
     
         <div class="search-container">
             <label for="search_titulo">Buscar Título do Álbum:</label>
@@ -67,8 +80,8 @@ require_once 'header.php';
         </div>
 
         <div class="search-container">
-            <label for="filter_artista">Filtrar por Artista:</label>
-            <select id="filter_artista" name="filter_artista">
+            <label for="  _artista">Filtrar por Artista:</label>
+            <select id="  _artista" name="  _artista">
                 <option value="">-- Selecione um Artista --</option>
                 <?php if (!empty($artistas)): ?>
                     <?php foreach ($artistas as $artista): ?>
@@ -111,13 +124,18 @@ require_once 'header.php';
                     <td><?php echo htmlspecialchars($album['tipo'] ?? 'Não Classificado'); ?></td>
                     <td><?php echo htmlspecialchars($album['status'] ?? 'Desconhecida'); ?></td>
                     <td><?php echo htmlspecialchars($album['formato'] ?? 'Sem Formato'); ?></td>
-                    
-                                        <td>
+
+                    <td>
                         <a href="editar.php?id=<?php echo $album['id']; ?>" title="Editar Álbum">
                             <i class="fa-solid fa-pencil" style="color: #007bff; cursor: pointer;"></i>
+                       </a>
+
+                        <a href="excluir.php?id=<?php echo $album['id']; ?>"
+                            title="Excluir Álbum"
+                            onclick="return confirm('Tem certeza que deseja marcar este álbum (ID: <?php echo $album['id']; ?>) como excluído?');">
+                            <i class="fa-solid fa-trash-can" style="color: #dc3545; cursor: pointer; margin-left: 8px;"></i>
                         </a>
-                        <i class="fa-solid fa-trash-can" style="color: #dc3545; cursor: pointer; margin-left: 8px;" title="Excluir"></i>
-                    </td> 
+                    </td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>
