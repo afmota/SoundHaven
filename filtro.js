@@ -1,4 +1,4 @@
-// Arquivo: filtro.js (Lógica AJAX para Título e Artista)
+// Arquivo: filtro.js (Lógica AJAX para Título e Artista - CORRIGIDA)
 
 $(document).ready(function() {
     
@@ -8,8 +8,7 @@ $(document).ready(function() {
         
         if (response.length > 0) {
             $.each(response, function(i, album) {
-                // Constrói uma linha da tabela (<tr>). Os nomes das chaves (album.titulo, etc.)
-                // devem corresponder aos aliases da sua consulta SQL.
+                // Constrói uma linha da tabela (<tr>)
                 tableBody += '<tr>';
                 tableBody += '<td>' + (album.id || '') + '</td>';
                 tableBody += '<td>' + (album.titulo || '') + '</td>';
@@ -19,8 +18,18 @@ $(document).ready(function() {
                 tableBody += '<td>' + (album.status || 'Desconhecida') + '</td>';
                 tableBody += '<td>' + (album.formato || 'Sem Formato') + '</td>';
                 
-                // Coluna Ações: Vazia, conforme combinado
-                tableBody += '<td></td>'; 
+                // CORREÇÃO: Coluna Ações com os ícones de Edição e Exclusão
+                tableBody += '<td>';
+                
+                // Link de EDITAR
+                tableBody += '<a href="editar.php?id=' + (album.id) + '" title="Editar Álbum">';
+                tableBody += '<i class="fa-solid fa-pencil" style="color: #007bff; cursor: pointer;"></i>';
+                tableBody += '</a>';
+                
+                // Ícone de Excluir (Ainda Estático)
+                tableBody += '<i class="fa-solid fa-trash-can" style="color: #dc3545; cursor: pointer; margin-left: 8px;" title="Excluir"></i>';
+                
+                tableBody += '</td>'; 
                 
                 tableBody += '</tr>';
             });
@@ -33,7 +42,7 @@ $(document).ready(function() {
     }
     
     // ----------------------------------------------------------------------
-    // 1. Lógica do Filtro por TÍTULO (Disparado a cada tecla)
+    // 1. Lógica do Filtro por TÍTULO
     // ----------------------------------------------------------------------
 
     $('#search_titulo').on('keyup', function() {
@@ -44,11 +53,10 @@ $(document).ready(function() {
              $('#filter_artista').val('');
         }
         
-        // Dispara a busca a partir do primeiro caractere (ou se estiver vazio, para recarregar tudo)
         if (searchTerm.length >= 1 || searchTerm.length === 0) { 
             
             $.ajax({
-                url: 'busca.php', // Usa o arquivo para busca por texto
+                url: 'busca.php',
                 method: 'GET',
                 data: { query: searchTerm }, 
                 dataType: 'json', 
@@ -64,22 +72,22 @@ $(document).ready(function() {
     });
 
     // ----------------------------------------------------------------------
-    // 2. Lógica do Filtro por ARTISTA (Disparado ao selecionar)
+    // 2. Lógica do Filtro por ARTISTA
     // ----------------------------------------------------------------------
     
     $('#filter_artista').on('change', function() {
         var artistaId = $(this).val();
         
-        // Zera o campo de título, pois o foco mudou para o filtro de artista.
+        // Zera o campo de título.
         if (artistaId.length > 0) {
             $('#search_titulo').val('');
         }
         
-        // Dispara a busca apenas se houver uma seleção (o valor vazio é a opção default)
+        // Dispara a busca se houver uma seleção
         if (artistaId.length > 0) { 
             
             $.ajax({
-                url: 'busca_artista.php', // Usa o novo arquivo para busca por ID
+                url: 'busca_artista.php',
                 method: 'GET',
                 data: { artista_id: artistaId }, 
                 dataType: 'json', 
@@ -92,8 +100,7 @@ $(document).ready(function() {
                 }
             });
         } else {
-            // Se a opção "-- Selecione um Artista --" for escolhida, recarrega a lista completa
-            // Simula um 'keyup' vazio no filtro de título para recarregar tudo
+            // Recarrega a lista completa
             $('#search_titulo').val('');
             $('#search_titulo').trigger('keyup'); 
         }

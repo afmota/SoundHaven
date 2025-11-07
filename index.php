@@ -64,8 +64,14 @@ try {
     <h1>Acervo Digital</h1>
     <hr>
 
-    <div class="filters-container">
+    <?php 
+    // NOVO: Mensagem de sucesso após edição
+    if (isset($_GET['status']) && $_GET['status'] == 'editado'): 
+    ?>
+        <p class="sucesso">Álbum "<?php echo htmlspecialchars($_GET['album']); ?>" atualizado com sucesso!</p>
+    <?php endif; ?>
     
+    <div class="filters-container">
         <div class="search-container">
             <label for="search_titulo">Buscar Título do Álbum:</label>
             <input type="text" id="search_titulo" name="search_titulo" placeholder="Digite o título do álbum..." autocomplete="off">
@@ -117,8 +123,11 @@ try {
                     <td><?php echo htmlspecialchars($album['status'] ?? 'Desconhecida'); ?></td>
                     <td><?php echo htmlspecialchars($album['formato'] ?? 'Sem Formato'); ?></td>
                     <td>
-                        <i class="fa-solid fa-pencil" style="color: #007bff; cursor: pointer;" title="Editar"></i>
-                        <i class="fa-solid fa-trash-can" style="color: #dc3545; cursor: pointer; margin-left: 8px;" title="Excluir"></i>
+                        <td><?php echo htmlspecialchars($album['formato'] ?? 'Sem Formato'); ?></td>
+                        <td>
+                            <a href="editar.php?id=<?php echo $album['id']; ?>" title="Editar Álbum">
+                            <i class="fa-solid fa-pencil" style="color: #007bff; cursor: pointer;"></i>
+                            <i class="fa-solid fa-trash-can" style="color: #dc3545; cursor: pointer; margin-left: 8px;" title="Excluir"></i>
                     </td> 
                 </tr>
                 <?php endforeach; ?>
