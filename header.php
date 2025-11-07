@@ -18,7 +18,8 @@
         <div class="logo">Acervo Digital</div>
         <nav>
             <a href="index.php">Listagem</a>
-            </nav>
+            <a href="adicionar_album.php">Adicionar Novo</a>
+        </nav>
     </header>
 
     <div class="main-container">

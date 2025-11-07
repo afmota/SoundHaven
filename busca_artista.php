@@ -19,7 +19,7 @@ if ($artista_id > 0) {
 }
 
 // 3. Monta a Query (Sua Query Original + Filtro)
-$sql = "SELECT
+$sql = "SELECT 
             s.id, 
             s.titulo, 
             a.nome AS nome_artista,
@@ -32,9 +32,8 @@ $sql = "SELECT
             LEFT JOIN tipo_album AS t ON s.tipo_id = t.id
             LEFT JOIN situacao AS sit ON s.situacao = sit.id
             LEFT JOIN formatos AS f ON s.formato_id = f.id
-        WHERE " . $where_clause . "
-        ORDER BY s.data_lancamento
-        LIMIT 100";
+        WHERE s.deletado = 0 AND s.artista_id = :artista_id /* <-- Adicionamos o filtro aqui */
+        ORDER BY s.data_lancamento DESC";
         
 try {
     $stmt = $pdo->prepare($sql);

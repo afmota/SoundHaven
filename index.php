@@ -87,24 +87,30 @@ require_once 'header.php';
     <h1>Listagem de Álbuns</h1>
 
     <?php 
-        // Mensagem de sucesso após edição
-        if (isset($_GET['status']) && $_GET['status'] == 'editado'): 
-        ?>
-            <p class="sucesso">Álbum "<?php echo htmlspecialchars($_GET['album']); ?>" atualizado com sucesso!</p>
+    // Mensagem de sucesso após edição
+    if (isset($_GET['status']) && $_GET['status'] == 'editado'): 
+    ?>
+        <p class="sucesso">Álbum "<?php echo htmlspecialchars($_GET['album']); ?>" atualizado com sucesso!</p>
+    
+    <?php 
+    // Mensagem de sucesso após criação
+    elseif (isset($_GET['status']) && $_GET['status'] == 'criado'): 
+    ?>
+        <p class="sucesso">Álbum "<?php echo htmlspecialchars($_GET['album']); ?>" adicionado com sucesso!</p>
+
+    <?php 
+    // Mensagem de sucesso após exclusão
+    elseif (isset($_GET['status']) && $_GET['status'] == 'excluido'): 
+    ?>
+        <p class="sucesso">Álbum excluído logicamente com sucesso.</p>
+
+    <?php 
+    // Mensagem de erro
+    elseif (isset($_GET['status']) && strpos($_GET['status'], 'erro') !== false): 
+    ?>
+        <p class="erro">Erro ao processar a operação. Tente novamente.</p>
         
-        <?php 
-        // NOVO: Mensagem de sucesso após exclusão
-        elseif (isset($_GET['status']) && $_GET['status'] == 'excluido'): 
-        ?>
-            <p class="sucesso">Álbum excluído logicamente com sucesso.</p>
-
-        <?php 
-        // NOVO: Mensagem de erro
-        elseif (isset($_GET['status']) && strpos($_GET['status'], 'erro') !== false): 
-        ?>
-            <p class="erro">Erro ao processar a exclusão. Tente novamente.</p>
-
-        <?php endif; ?>
+    <?php endif; ?>
     
     <div class="  s-container">
     

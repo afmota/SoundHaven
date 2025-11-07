@@ -252,3 +252,75 @@ label {
     font-weight: bold;
     cursor: default;
 }
+
+/* Arquivo: estilos.css */
+
+/* ---------------------------------- */
+/* FORMULÁRIO DE EDIÇÃO (LAYOUT VERTICAL) */
+/* ---------------------------------- */
+
+.edit-form {
+    /* REMOVEMOS O GRID DE DUAS COLUNAS. Agora ele é um contêiner flexível padrão. */
+    display: flex;
+    flex-direction: column; /* Força os elementos a se empilharem */
+    
+    width: 100%;
+    max-width: 550px; /* Reduz a largura para ficar mais centralizado e agradável */
+    margin: 20px auto;
+    padding: 20px;
+    border: none;
+    background-color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.edit-form label {
+    display: block; /* Garante que a label ocupe a largura total */
+    margin-top: 15px; /* Espaço entre os campos */
+    margin-bottom: 5px;
+    font-weight: 600;
+    text-align: left; /* Garante que o label esteja alinhado à esquerda */
+}
+
+.edit-form input[type="text"], 
+.edit-form input[type="date"],
+.edit-form select {
+    width: 100%; /* O campo de input/select ocupa 100% da largura do formulário */
+    padding: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+/* O botão agora não precisa de grid-column para ocupar 100% */
+.save-button {
+    /* grid-column: 1 / 3; <-- REMOVIDO */ 
+    background-color: #28a745;
+    color: white;
+    padding: 12px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+    margin-top: 30px; /* Mais espaço antes do botão de salvar */
+    transition: background-color 0.3s;
+}
+
+.save-button:hover {
+    background-color: #218838;
+}
+
+.back-link {
+    display: inline-block;
+    padding: 8px 15px;
+    background-color: #f8f9fa; /* Fundo cinza claro */
+    color: #007bff; /* Texto azul */
+    text-decoration: none;
+    border: 1px solid #007bff;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    transition: background-color 0.3s;
+}
+
+.back-link:hover {
+    background-color: #e2e6ea;
+}
