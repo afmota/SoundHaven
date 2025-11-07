@@ -65,7 +65,7 @@ require_once 'header.php';
             <label for="search_titulo">Buscar Título do Álbum:</label>
             <input type="text" id="search_titulo" name="search_titulo" placeholder="Digite o título do álbum..." autocomplete="off">
         </div>
-        
+
         <div class="search-container">
             <label for="filter_artista">Filtrar por Artista:</label>
             <select id="filter_artista" name="filter_artista">
