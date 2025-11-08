@@ -453,3 +453,8 @@ legend {
         gap: 10px;
     }
 }
+
+.colecao-list {
+    /* Garante que o conteúdo que vaza (como uma tabela larga) seja contido */
+    overflow-x: auto; 
+}

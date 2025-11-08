@@ -103,108 +103,112 @@ require_once 'header.php';
 ?>
 
 <div class="container">
-    <h1 style="margin-bottom: 20px;">Sua Coleção Pessoal (Total: <?php echo count($colecao); ?> itens)</h1>
-
-    <div class="colecao-list">
-        <?php if (empty($colecao)): ?>
-            <p>Sua coleção está vazia. Adicione itens a partir do Catálogo!</p>
-        <?php else: ?>
+    <div class="main-layout">
+        <div class="content-area">
+            <h1 style="margin-bottom: 20px;">Sua Coleção Pessoal (Total: <?php echo count($colecao); ?> itens)</h1>
+            <div class="colecao-list">
+                <?php if (empty($colecao)): ?>
+                    <p>Sua coleção está vazia. Adicione itens a partir do Catálogo!</p>
+                <?php else: ?>
             
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Capa</th> <th>Título</th>
-                        <th>Artistas</th>
-                        <th>Gêneros/Estilos</th>
-                        <th>Formato/Condição</th>
-                        <th>Aquisição/Preço</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($colecao as $album): 
-                        
-                        // Formata a lista de artistas
-                        $artistas_display = $album['relacionamentos']['artistas'] ?? ['N/A'];
-                        $artistas_str = implode(', ', $artistas_display);
-
-                        // Formata a lista de Gêneros e Estilos
-                        $generos_arr = $album['relacionamentos']['generos'] ?? [];
-                        $estilos_arr = $album['relacionamentos']['estilos'] ?? [];
-                        $tags_str = '';
-                        
-                        if (!empty($generos_arr)) {
-                             $tags_str .= '<strong>Gêneros:</strong> ' . htmlspecialchars(implode(', ', $generos_arr)) . '<br>';
-                        }
-                         if (!empty($estilos_arr)) {
-                             $tags_str .= '<strong>Estilos:</strong> ' . htmlspecialchars(implode(', ', $estilos_arr));
-                        }
-                        if (empty($generos_arr) && empty($estilos_arr)) {
-                            $tags_str = 'N/A';
-                        }
-                        
-                    ?>
-                        <tr>
-                            <td>
-                                <?php if (!empty($album['capa_url'])): ?>
-                                    <img src="<?php echo htmlspecialchars($album['capa_url']); ?>" 
-                                         alt="Capa de <?php echo htmlspecialchars($album['titulo']); ?>" 
-                                         style="width: 50px; height: 50px; object-fit: cover; border-radius: 3px;">
-                                <?php else: ?>
-                                    <div style="width: 50px; height: 50px; background-color: #eee; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #666; border-radius: 3px;">
-                                        S/ Capa
-                                    </div>
-                                <?php endif; ?>
-                            </td>
-
-                            <td>
-                                <strong><?php echo htmlspecialchars($album['titulo']); ?></strong>
-                                <small style="display: block;">
-                                    Lançamento: <?php echo formatar_data($album['data_lancamento']); ?>
-                                </small>
-                                <?php if (!empty($album['gravadora_nome'])): ?>
-                                    <small style="display: block; font-weight: bold; color: #6c757d;">
-                                        Gravadora: <?php echo htmlspecialchars($album['gravadora_nome']); ?>
-                                    </small>
-                                <?php endif; ?>
-                            </td>
-                            
-                            <td>
-                                <?php echo htmlspecialchars($artistas_str); ?>
-                                <?php 
-                                    $produtores_display = $album['relacionamentos']['produtores'] ?? [];
-                                    if (!empty($produtores_display)):
-                                ?>
-                                    <small style="display: block;">(Produtores: <?php echo htmlspecialchars(implode(', ', $produtores_display)); ?>)</small>
-                                <?php endif; ?>
-                            </td>
-
-                            <td><?php echo $tags_str; ?></td>
-
-                            <td>
-                                <?php echo htmlspecialchars($album['formato_descricao'] ?? 'N/A'); ?>
-                                <?php if (!empty($album['condicao'])): ?>
-                                    <small style="display: block;">(Condição: <?php echo htmlspecialchars($album['condicao']); ?>)</small>
-                                <?php endif; ?>
-                            </td>
-
-                            <td>
-                                <?php echo formatar_data($album['data_aquisicao']); ?>
-                                <?php if ($album['preco'] !== null): ?>
-                                    <small style="display: block;">(R$ <?php echo number_format($album['preco'], 2, ',', '.'); ?>)</small>
-                                <?php endif; ?>
-                            </td>
-
-                            <td>
-                                <a href="editar_colecao.php?id=<?php echo $album['id']; ?>" class="action-link">Editar</a> | 
-                                <a href="excluir_colecao.php?id=<?php echo $album['id']; ?>" class="action-link delete-link" onclick="return confirm('Tem certeza que deseja remover este item da sua coleção?');">Remover</a>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-
-        <?php endif; ?>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Capa</th> <th>Título</th>
+                                <th>Artistas</th>
+                                <th>Gêneros/Estilos</th>
+                                <th>Formato/Condição</th>
+                                <th>Aquisição/Preço</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($colecao as $album):
+            
+                                // Formata a lista de artistas
+                                $artistas_display = $album['relacionamentos']['artistas'] ?? ['N/A'];
+                                $artistas_str = implode(', ', $artistas_display);
+                                // Formata a lista de Gêneros e Estilos
+                                $generos_arr = $album['relacionamentos']['generos'] ?? [];
+                                $estilos_arr = $album['relacionamentos']['estilos'] ?? [];
+                                $tags_str = '';
+            
+                                if (!empty($generos_arr)) {
+                                     $tags_str .= '<strong>Gêneros:</strong> ' . htmlspecialchars(implode(', ', $generos_arr)) . '<br>';
+                                }
+                                 if (!empty($estilos_arr)) {
+                                     $tags_str .= '<strong>Estilos:</strong> ' . htmlspecialchars(implode(', ', $estilos_arr));
+                                }
+                                if (empty($generos_arr) && empty($estilos_arr)) {
+                                    $tags_str = 'N/A';
+                                }
+            
+                            ?>
+                                <tr>
+                                    <td>
+                                        <?php if (!empty($album['capa_url'])): ?>
+                                            <img src="<?php echo htmlspecialchars($album['capa_url']); ?>"
+                                                 alt="Capa de <?php echo htmlspecialchars($album['titulo']); ?>"
+                                                 style="width: 50px; height: 50px; object-fit: cover; border-radius: 3px;">
+                                        <?php else: ?>
+                                            <div style="width: 50px; height: 50px; background-color: #eee; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #666; border-radius: 3px;">
+                                                S/ Capa
+                                            </div>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <strong><?php echo htmlspecialchars($album['titulo']); ?></strong>
+                                        <small style="display: block;">
+                                            Lançamento: <?php echo formatar_data($album['data_lancamento']); ?>
+                                        </small>
+                                        <?php if (!empty($album['gravadora_nome'])): ?>
+                                            <small style="display: block; font-weight: bold; color: #6c757d;">
+                                                Gravadora: <?php echo htmlspecialchars($album['gravadora_nome']); ?>
+                                            </small>
+                                        <?php endif; ?>
+                                    </td>
+            
+                                    <td>
+                                        <?php echo htmlspecialchars($artistas_str); ?>
+                                        <?php
+                                            $produtores_display = $album['relacionamentos']['produtores'] ?? [];
+                                            if (!empty($produtores_display)):
+                                        ?>
+                                            <small style="display: block;">(Produtores: <?php echo htmlspecialchars(implode(', ', $produtores_display)); ?>)</small>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?php echo $tags_str; ?></td>
+                                    <td>
+                                        <?php echo htmlspecialchars($album['formato_descricao'] ?? 'N/A'); ?>
+                                        <?php if (!empty($album['condicao'])): ?>
+                                            <small style="display: block;">(Condição: <?php echo htmlspecialchars($album['condicao']); ?>)</small>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php echo formatar_data($album['data_aquisicao']); ?>
+                                        <?php if ($album['preco'] !== null): ?>
+                                            <small style="display: block;">(R$ <?php echo number_format($album['preco'], 2, ',', '.'); ?>)</small>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <a href="editar_colecao.php?id=<?php echo $album['id']; ?>" title="Editar item" class="action-icon edit">
+                                            <i class="fa fa-pencil-alt"></i>
+                                        </a>
+            
+                                        <a href="excluir_colecao.php?id=<?php echo $album['id']; ?>"
+                                           title="Remover item (Exclusão Lógica)"
+                                           class="action-icon delete"
+                                           onclick="return confirm('Tem certeza que deseja REMOVER (Exclusão Lógica) este item da sua coleção?');">
+                                            <i class="fa fa-trash-alt"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
+            </div>
+        </div>
     </div>
 </div>
 
