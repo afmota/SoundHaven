@@ -1,0 +1,662 @@
+/* ========================================= */
+/* ESTILOS ESPECÍFICOS DE COLEÇÃO            */
+/* (Usados em colecao.php, editar_colecao.php, detalhes_colecao.php) */
+/* ========================================= */
+
+/* ESTILOS DA TABELA (colecao.php) */
+.album-table-container {
+    overflow-x: auto; /* Permite scroll horizontal em telas pequenas */
+}
+
+.album-table {
+    width: 100%;
+    border-collapse: separate; /* Permite border-radius */
+    border-spacing: 0;
+    font-size: 0.9em;
+    background-color: var(--cor-fundo-card); 
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.album-table thead th {
+    background-color: #1f2937; /* Cor de cabeçalho mais clara que o fundo do card */
+    color: var(--cor-destaque);
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+/* Arredondamento dos cantos do cabeçalho */
+.album-table thead th:first-child {
+    border-top-left-radius: 8px;
+}
+.album-table thead th:last-child {
+    border-top-right-radius: 8px;
+}
+
+.album-table tbody tr {
+    border-bottom: 1px solid var(--cor-borda);
+    transition: background-color 0.2s;
+}
+
+.album-table tbody tr:hover {
+    background-color: #2a3547; /* Hover suave */
+}
+
+.album-table tbody tr:last-child {
+    border-bottom: none; 
+}
+
+.album-table td {
+    padding: 12px 15px;
+    color: var(--cor-texto-principal);
+    vertical-align: middle;
+}
+
+/* Coluna de Ações */
+.actions-cell {
+    white-space: nowrap;
+}
+
+.actions-cell a {
+    margin-right: 10px;
+    font-size: 1.1em;
+    color: #93c5fd; /* Cor diferente para ações */
+    transition: color 0.2s;
+}
+
+.actions-cell a.delete-link {
+    color: #f87171; /* Cor de exclusão */
+}
+
+.actions-cell a:hover {
+    color: var(--cor-destaque);
+}
+
+/* ESTILOS PARA PAGINAÇÃO */
+.pagination {
+    display: flex;
+    justify-content: flex-start; /* Alinhado à esquerda da tabela */
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+    font-size: 0.9em;
+}
+
+.pagination a, .pagination span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--cor-borda);
+    background-color: var(--cor-fundo-card);
+    color: var(--cor-texto-principal);
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+
+.pagination a:hover {
+    background-color: #2a3547;
+    border-color: var(--cor-destaque);
+}
+
+.pagination .current-page {
+    background-color: var(--cor-destaque);
+    color: #000;
+    font-weight: 700;
+    border-color: var(--cor-destaque);
+}
+
+.pagination .disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+
+/* ESTILOS DE GRID ESPECÍFICO PARA COLEÇÃO (editar_colecao.php) */
+
+.intro-text {
+    color: var(--cor-texto-secundaria);
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px dashed var(--cor-borda);
+    font-size: 0.95em;
+}
+
+.colecao-grid {
+    display: grid;
+    /* Divide a tela em duas colunas grandes */
+    grid-template-columns: 1fr 1fr; 
+    gap: 40px; /* Espaço entre as duas colunas principais */
+}
+
+.colecao-grid fieldset {
+    border: 1px solid var(--cor-borda-input);
+    padding: 20px;
+    border-radius: 6px;
+    margin: 0; /* Remove margem padrão */
+    background-color: var(--cor-fundo-principal); /* Destaque o fieldset em relação ao card */
+}
+
+.colecao-grid legend {
+    color: var(--cor-destaque);
+    font-weight: 700;
+    font-size: 1.1em;
+    padding: 0 10px;
+}
+
+.colecao-grid small {
+    display: block;
+    margin-top: 5px;
+    margin-bottom: 20px;
+    color: #9ca3af; /* Cinza claro para texto informativo */
+    font-size: 0.85em;
+}
+
+/* Garante que o select múltiplo tenha a aparência correta */
+.edit-form select[multiple] {
+    min-height: 120px;
+    height: auto;
+    padding: 8px; /* Ajusta o padding para listas */
+}
+
+/* Responsividade: Volta para uma única coluna em telas menores */
+@media (max-width: 992px) {
+    .colecao-grid {
+        grid-template-columns: 1fr; /* Uma única coluna */
+        gap: 30px;
+    }
+}
+
+
+/* ESTILOS DA PÁGINA DE DETALHES DA COLEÇÃO (detalhes_colecao.php) - APENAS ESTILOS DE COMPONENTES INTERNOS */
+/* Os estilos .details-grid, .details-card-header, .detail-item etc. estão agora em loja.css */
+
+.details-panel-info h2,
+.details-panel-status h2 {
+    /* Cor diferenciada para o título da coleção */
+    color: var(--cor-texto-principal); 
+    font-size: 1.5em;
+    padding-bottom: 5px;
+    border-bottom: 2px solid var(--cor-destaque);
+    margin-bottom: 20px;
+}
+
+.details-panel-status .price-tag {
+    font-size: 1.1em;
+    font-weight: 700;
+    color: #10b981; /* Verde forte para o preço */
+}
+
+.details-panel-status .log-title {
+    font-size: 1em;
+    font-weight: 600;
+    color: var(--cor-texto-secundaria);
+    margin-top: 30px;
+    margin-bottom: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--cor-borda-input);
+}
+
+/* Observações (para ocupar todo o espaço) */
+.details-panel-status .full-width-obs {
+    display: block; /* Ocupa a linha toda */
+    flex-direction: column;
+    align-items: flex-start;
+    padding-bottom: 15px;
+}
+
+.details-panel-status .full-width-obs .label {
+    width: 100%;
+    margin-bottom: 8px;
+    text-align: left;
+    font-size: 1em;
+    color: var(--cor-texto-principal);
+}
+
+.details-panel-status .value-obs {
+    width: 100%;
+    background-color: var(--cor-fundo-input);
+    padding: 15px;
+    border-radius: 4px;
+    white-space: pre-wrap;
+    font-style: italic;
+    color: var(--cor-texto-secundaria);
+    text-align: left;
+    font-size: 0.9em;
+}
+
+
+/* ESTILOS DA PÁGINA COLECAO.PHP (LISTA DE CARDS) */
+/* Novo card minimalista: Ajustamos a largura máxima para se adequar ao grid de 5 colunas */
+.colecao-card-grid {
+    display: grid;
+    /* Padrão para telas grandes (5 colunas) */
+    grid-template-columns: repeat(5, 1fr);
+    gap: 20px;
+    margin-top: 20px;
+}
+
+/* Estilo do Card individual da Coleção */
+.colecao-item-card {
+    /* Fazemos a capa ser o elemento clicável no novo layout */
+    text-align: center;
+    border: 1px solid var(--cor-borda);
+    padding: 0; /* Remove padding do card principal */
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.colecao-item-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px var(--sombra-card);
+}
+
+/* 1. SEÇÃO PRINCIPAL (Capa e Detalhes) */
+/*.card-header-main {
+    display: flex;
+    gap: 15px;
+    padding: 15px;
+    align-items: flex-start;
+    border-bottom: 1px solid var(--cor-borda); 
+}
+
+/*.card-capa-wrapper {
+    flex-shrink: 0; 
+}*/
+
+.card-capa-wrapper {
+    /* O wrapper da capa para o novo design */
+    width: 100%;
+    /* Mantém a proporção 1:1, crucial para o layout de galeria */
+    aspect-ratio: 1 / 1; 
+    overflow: hidden;
+    background-color: var(--cor-borda-input); 
+}
+
+.colecao-capa-grande {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.colecao-capa-grande.no-cover {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2em;
+    font-weight: bold;
+    color: var(--cor-texto-secundario);
+}
+
+.card-capa-grande img {
+    object-fit: cover;
+}
+
+.card-details-main {
+    flex-grow: 1;
+}
+
+.card-details-main h2 {
+    margin: 0 0 5px;
+    font-size: 1.25em;
+    line-height: 1.3;
+}
+
+.card-artista {
+    margin: 0 0 5px;
+    font-size: 0.9em;
+}
+
+/* 2. SEÇÃO SECUNDÁRIA (Tags e Infos) */
+.card-body-secondary {
+    padding: 15px;
+}
+
+.card-tags {
+    margin-top: 0;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed var(--cor-borda);
+    line-height: 1.5;
+}
+
+.card-info-flex {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.info-block {
+    flex: 1;
+}
+
+.info-block p {
+    margin: 5px 0;
+    font-weight: 500;
+}
+
+/* ========================================== */
+/* ESTILOS DE TEXTO PARA CARDS MINIMALISTAS */
+/* ========================================== */
+
+.colecao-card-minimal-details {
+    padding: 10px 8px; /* Reduz o padding para encaixar melhor no grid de 5 colunas */
+    min-height: 60px; /* Garante que todos os cards tenham altura mínima */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.card-titulo-minimal {
+    margin: 0;
+    /* Fonte do título ajustada para 1em */
+    font-size: 1em; 
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* Limita o título a duas linhas */
+    display: -webkit-box;
+    -webkit-line-clamp: 2; 
+    -webkit-box-orient: vertical;
+    width: 100%;
+    color: var(--cor-texto-principal);
+    font-weight: 600;
+    text-align: center;
+}
+
+.card-artista-minimal {
+    margin: 5px 0 0 0;
+    /* Fonte menor para o artista */
+    font-size: 0.85em; 
+    color: var(--cor-texto-secundario); /* Cor secundária */
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    width: 100%;
+    font-weight: normal;
+    text-align: center;
+}
+
+/* 3. RODAPÉ DE AÇÕES */
+.card-footer-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    padding: 10px 15px;
+    background-color: var(--cor-fundo-principal); 
+    border-top: 1px solid var(--cor-borda);
+}
+
+.card-footer-actions a {
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 0.9em;
+    padding: 5px 0;
+    transition: color 0.2s;
+}
+
+.card-footer-actions a.edit:hover {
+    color: #4da6ff !important;
+}
+
+.card-footer-actions a.delete:hover {
+    color: #ff5c6c !important;
+}
+
+/* Estilos para o novo campo de adição rápida via AJAX */
+.form-group-with-add {
+    display: flex; /* Usar flex para organizar select, input e botão */
+    flex-wrap: wrap; /* Permite que o input e botão quebrem para a linha de baixo */
+    gap: 5px;
+    margin-bottom: 5px;
+}
+
+/* O select deve sempre ocupar a largura total */
+.form-group-with-add select {
+    width: 100%;
+}
+
+/* O wrapper para input e botão aparece abaixo do select */
+.add-new-controls {
+    display: flex;
+    width: 100%; /* Ocupa a linha completa abaixo do select */
+    gap: 5px;
+}
+
+/* Campo de input para o novo nome/descrição (escondido por padrão) */
+.form-group-with-add input.small-input {
+    flex-grow: 1; 
+    display: none; /* ESCONDIDO POR PADRÃO */
+    padding: 8px;
+    font-size: 0.9em;
+    height: 38px;
+    border: 1px solid var(--cor-borda);
+    background-color: var(--cor-fundo-input);
+    color: var(--cor-texto-principal);
+}
+
+/* O botão de adição */
+.btn-add-entity {
+    background-color: var(--cor-destaque);
+    color: var(--cor-fundo-card);
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-weight: bold;
+    padding: 8px 10px;
+    height: 28px;
+    width: 30px; /* Largura fixa para o ícone de '+' */
+    flex-shrink: 0;
+}
+
+.btn-add-entity:hover {
+    background-color: #fce347; 
+}
+
+/* Ocultar o ícone de 'check' (salvar) por padrão */
+.save-icon {
+    display: none;
+}
+
+/* ESTADO DE ADIÇÃO ATIVO */
+.form-group-with-add.adding-mode .add-icon {
+    display: none; /* Esconde o '+' */
+}
+
+.form-group-with-add.adding-mode .save-icon {
+    display: inline; /* Mostra o 'check' */
+}
+
+.form-group-with-add.adding-mode input.small-input {
+    display: block; /* Mostra o input */
+}
+
+.form-group-with-add.adding-mode .btn-add-entity {
+    background-color: #1DB954; /* Cor verde para Salvar */
+}
+
+.form-group-with-add.adding-mode .btn-add-entity:hover {
+    background-color: #169e46; 
+}
+
+/* ========================================== */
+/* MODAL DE DETALHES DA COLEÇÃO */
+/* ========================================== */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: none; /* Escondido por padrão, alterado para flex pelo JS */
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: var(--cor-fundo-card);
+    border-radius: var(--card-border-radius);
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+    color: var(--cor-texto-principal);
+    box-shadow: 0 5px 15px var(--sombra-card);
+    padding: 20px;
+    position: relative;
+    transform: scale(0.95);
+    transition: transform 0.2s ease-out;
+}
+
+.modal-content.loaded {
+    transform: scale(1);
+}
+
+.modal-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--cor-texto-secundario);
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.modal-close:hover {
+    color: #dc3545; /* Vermelho mais vibrante */
+}
+
+/* Layout de duas colunas para o conteúdo do modal */
+.modal-grid {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 30px;
+    margin-top: 20px;
+}
+
+.modal-capa {
+    width: 100%;
+    height: auto;
+    border-radius: var(--card-border-radius);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
+
+.modal-details-container h2 {
+    margin-top: 0;
+    margin-bottom: 5px;
+    color: var(--cor-destaque);
+}
+
+.modal-details-container p {
+    margin: 5px 0;
+}
+
+.modal-details-section {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid var(--cor-borda);
+}
+
+.modal-details-section h3 {
+    color: var(--cor-texto-secundario);
+    font-size: 1.1em;
+    margin-bottom: 10px;
+}
+
+.modal-info-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.modal-info-item {
+    min-width: 150px;
+}
+
+.modal-info-item strong {
+    display: block;
+    color: var(--cor-destaque);
+    font-size: 0.85em;
+    margin-bottom: 3px;
+}
+
+.modal-actions {
+    margin-top: 25px;
+    text-align: right;
+    border-top: 1px solid var(--cor-borda);
+    padding-top: 15px;
+}
+
+.modal-actions a {
+    display: inline-block;
+    padding: 8px 15px;
+    text-decoration: none;
+    font-weight: bold;
+    border-radius: 4px;
+    margin-left: 10px;
+    transition: opacity 0.2s;
+}
+
+.modal-actions a:hover {
+    opacity: 0.8;
+}
+
+.modal-actions .edit {
+    background-color: #007bff;
+    color: white;
+}
+
+.modal-actions .delete {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* Responsividade do Modal */
+@media (max-width: 768px) {
+    .modal-grid {
+        grid-template-columns: 1fr;
+    }
+    .modal-col-capa {
+        text-align: center;
+    }
+    .modal-capa {
+        max-width: 150px;
+        margin: 0 auto 20px;
+    }
+    .modal-info-item {
+        min-width: 100%; /* Empilha itens de informação em telas menores */
+    }
+}
+
+
+/* -------------------------------------- */
+/* RESPONSIVIDADE PARA O GRID DE CARDS */
+/* -------------------------------------- */
+
+/* Telas de tablet ou desktop menores (1024px e abaixo) -> 4 colunas */
+@media (max-width: 1200px) {
+    .colecao-card-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* Telas de tablet (768px e abaixo) -> 3 colunas */
+@media (max-width: 900px) {
+    .colecao-card-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Telas de celular (480px e abaixo) -> 2 colunas */
+@media (max-width: 600px) {
+    .colecao-card-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

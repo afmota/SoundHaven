@@ -22,7 +22,7 @@ $(document).ready(function() {
                 tableBody += '<td>';
                 
                 // Link de EDITAR
-                tableBody += '<a href="editar.php?id=' + (album.id) + '" title="Editar Álbum">';
+                tableBody += '<a href="editar_album.php?id=' + (album.id) + '" title="Editar Álbum">';
                 tableBody += '<i class="fa-solid fa-pencil" style="color: #007bff; cursor: pointer;"></i>';
                 tableBody += '</a>';
                 

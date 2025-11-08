@@ -1,0 +1,187 @@
+@charset "UTF-8";
+
+/* Paleta de cores adaptada (COPIADA DE ESTILOS.CSS PARA AUTOSSUFICIÊNCIA) */
+:root {
+    --cor-fundo-principal: #1f2937; /* Gray-800 */
+    --cor-fundo-card: #111827; /* Gray-900 */
+    --cor-borda: #374151; /* Gray-700 */
+    --cor-borda-input: #313131;
+    --cor-fundo-input: #2b2828;
+    --cor-texto-principal: #f3f4f6; /* Gray-100 */
+    --cor-texto-secundario: #9ca3af; /* Gray-400 */
+    --cor-destaque: #facc15; /* Yellow-400 */
+    --sombra-card: rgba(0, 0, 0, 0.3);
+
+    /* Cores específicas para login, se precisar de alguma diferente */
+    --cor-destaque-login: #007bff; /* Azul Principal, se quiser manter algum contraste */
+}
+
+* {
+    font-family: -apple-system, BlinkMacMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    padding: 0px;
+    margin: 0px;
+    box-sizing: border-box;
+}
+
+body, html {
+    /* Cor de fundo principal do tema Dark Mode */
+    background-color: var(--cor-fundo-principal);
+    background-image: none !important;
+    height: 100vh;
+    width: 100vw;
+}
+main {
+    position: relative;
+    height: 100vh;
+    width: 100vw;
+    background-color: var(--cor-fundo-principal); 
+    background-image: none; /* Zera qualquer imagem/gradiente que possa estar no main */
+}
+
+/* ========================================= */
+/* ESTILO DA CAIXA DE LOGIN (APARÊNCIA DE CARD DARK MODE) */
+/* ========================================= */
+section#login {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    overflow: hidden;
+    
+    /* Cores e Estilos Adaptados de .card do estilos.css */
+    background-color: var(--cor-fundo-card); /* Gray-900 para o fundo do card */
+    border: 1px solid var(--cor-borda); /* Gray-700 para a borda */
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7); /* Sombra mais intensa para destacar */
+    
+    width: 270px; 
+    height: 520px; 
+    border-radius: 12px; /* Arredondamento dos cards */
+    
+    transition: width 0.3s, height 0.3s;
+    transition-timing-function: ease;
+}
+
+section#login > div#imagem {
+    display: block;
+    /* Adapte a imagem de fundo para o tema Dark Mode se desejar. 
+       Use 'var(--cor-fundo-principal)' ou 'var(--cor-fundo-card)' como fallback */
+    background: var(--cor-fundo-principal) url(../imagens/metal.jpg) no-repeat;
+    background-size: cover;
+    background-position: center center;
+    height: 200px;
+}
+
+section#login > div#formulario {
+    display: block;
+    padding: 10px;
+}
+
+div#formulario {
+    text-align: center;
+    margin-bottom: 10px;
+    color: var(--cor-texto-principal); /* Texto principal branco */
+}
+
+div#formulario > p {
+    font-size: 0.8em;
+    color: var(--cor-texto-secundario); /* Texto secundário cinza */
+}
+
+form > div.campo {
+    background-color: var(--cor-borda); /* Cor de fundo do campo (Gray-700) */
+    border: 2px solid var(--cor-borda); 
+    display: block;
+    width: 100%;
+    height: 40px;
+    border-radius: 8px;
+    margin: 5px 0px;
+}
+
+div.campo > label {
+    display: none;
+}
+
+div.campo > span {
+    color: var(--cor-texto-principal); /* Ícone branco */
+    font-size: 2em;
+    width: 40px;
+    padding: 5px;
+}
+
+div.campo > input {
+    background-color: var(--cor-fundo-input); /* Fundo do input (Gray-800 mais escuro) */
+    color: var(--cor-texto-principal); /* Texto digitado branco */
+    font-size: 1em;
+    width: calc(100% - 45px);
+    height: 100%;
+    border: 0px;
+    border-radius: 8px;
+    padding: 4px;
+    transform: translateY(-12px);
+}
+
+div.campo > input:focus-within {
+    background-color: var(--cor-fundo-principal); /* Fundo do input fica mais escuro ao focar */
+    border: none;
+}
+
+/* Botão de Entrar */
+form > input[type=submit] {
+    display: block;
+    font-size: 1em;
+    width: 100%;
+    height: 40px;
+    background-color: var(--cor-destaque); /* Botão de destaque (Amarelo) */
+    color: var(--cor-fundo-card); /* Texto escuro no botão de destaque */
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+form > input[type=submit]:hover {
+    background-color: #f59e0b; /* Amarelo mais escuro no hover */
+}
+
+/* Botão de Esqueci a Senha */
+form > a.botao {
+    display: block;
+    text-align: center;
+    font-size: 1em;
+    width: 100%;
+    height: 40px;
+    padding-top: 5px;
+    margin-top: 5px;
+    background-color: var(--cor-borda); /* Fundo cinza para o botão secundário */
+    color: var(--cor-texto-principal); /* Texto em branco */
+    border: 1px solid var(--cor-borda);
+    border-radius: 7px;
+    text-decoration: none;
+}
+
+form > a.botao:hover {
+    background-color: var(--cor-fundo-principal); /* Cor de fundo suave no hover */
+}
+
+form > a.botao > span {
+    font-size: 0.9em;
+    color: var(--cor-texto-principal); /* Texto deve ser branco */
+}
+
+/* RESPONSIVIDADE (Manter se já existia) */
+@media (min-width: 768px) {
+    section#login {
+        width: 600px;
+        height: 350px;
+    }
+
+    section#login > div#imagem {
+        float: left;
+        width: 300px;
+        height: 100%;
+    }
+
+    section#login > div#formulario {
+        float: right;
+        width: 300px;
+    }
+}

@@ -2,7 +2,7 @@
 // Arquivo: excluir_colecao.php
 // Implementa a EXCLUSÃO LÓGICA (Soft Delete) de um item da Coleção.
 
-require_once 'conexao.php';
+require_once '../db/conexao.php';
 
 // ----------------------------------------------------
 // 1. VALIDAÇÃO INICIAL
