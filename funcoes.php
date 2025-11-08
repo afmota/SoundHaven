@@ -11,8 +11,8 @@
  * @param ?int $artista_filtro O ID do artista selecionado (pode ser NULL ou int).
  * @param ?int $tipo_filtro O ID do tipo de álbum (pode ser NULL ou int).
  * @param ?int $situacao_filtro O ID da situação (pode ser NULL ou int).
- * @param ?int $formato_filtro O ID do formato (pode ser NULL ou int).
- * @param ?int $deletado_filtro O filtro de status de deleção (0, 1 ou -1).
+ * @param ?int $formato_filtro O ID do formato (pode ser NULL, int, ou -1).
+ * @param int $deletado_filtro O filtro de status de deleção (0, 1 ou -1).
  * @return void Imprime o HTML da tabela e da paginacao.
  */
 function renderizar_tabela(
@@ -24,7 +24,7 @@ function renderizar_tabela(
     ?int $tipo_filtro = null, 
     ?int $situacao_filtro = null, 
     ?int $formato_filtro = null,
-    ?int $deletado_filtro = 0 // NOVO: Padrão 0 para não quebrar a primeira carga
+    ?int $deletado_filtro = 0
 ): void {
     if (empty($albuns)): ?>
         <p class="alerta">Nenhum álbum encontrado com os filtros aplicados.</p>
@@ -84,22 +84,22 @@ function renderizar_tabela(
                 if (!empty($termo_busca)) {
                     $query_params .= '&search_titulo=' . urlencode($termo_busca);
                 }
-                if ($artista_filtro) {
+                // Adiciona o filtro apenas se não for NULL
+                if ($artista_filtro !== null) {
                     $query_params .= '&filter_artista=' . $artista_filtro;
                 }
-                if ($tipo_filtro) {
+                if ($tipo_filtro !== null) {
                     $query_params .= '&filter_tipo=' . $tipo_filtro;
                 }
-                if ($situacao_filtro) {
+                if ($situacao_filtro !== null) {
                     $query_params .= '&filter_situacao=' . $situacao_filtro;
                 }
-                if ($formato_filtro) {
-                    // Cuidado: Se for -1 (Sem Formato), precisa manter o valor para que o index.php entenda
+                // Adiciona o filtro de formato (se for -1, ou um ID válido)
+                if ($formato_filtro !== null) {
                     $query_params .= '&filter_formato=' . $formato_filtro;
                 }
-                
-                // NOVO: Manter o filtro de deleção na paginação (se não for o padrão 0)
-                if ($deletado_filtro !== 0 && $deletado_filtro !== null) {
+                // Adiciona o filtro de deleção (se não for o padrão 0)
+                if ($deletado_filtro != 0) {
                     $query_params .= '&filter_deletado=' . $deletado_filtro;
                 }
                 
@@ -109,7 +109,7 @@ function renderizar_tabela(
                 <?php endif; ?>
 
                 <?php
-                // 2. Links para as páginas (Exibe um bloco de 5 páginas ao redor da atual)
+                // 2. Links para as páginas
                 $start = max(1, $pagina_atual - 2);
                 $end = min($total_paginas, $pagina_atual + 2);
 
