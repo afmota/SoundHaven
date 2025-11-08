@@ -327,3 +327,129 @@ table tbody tr:hover {
         grid-column: 1 / -1; 
     }
 }
+
+/* =======================================================
+   NOVOS ESTILOS PARA FORMULÁRIOS DE CRIAÇÃO/EDIÇÃO (adicionar_colecao.php)
+   Ajustado para seu layout base.
+========================================================== */
+
+.form-container {
+    /* O form-container principal no adicionar_colecao.php */
+    max-width: 800px; /* Alargamos um pouco para acomodar os múltiplos selects */
+    margin: 40px auto; /* Centraliza e afasta do header */
+    padding: 30px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.form-container h1 {
+    color: #007bff;
+    margin-bottom: 5px;
+}
+
+.form-container p {
+    color: #666;
+    margin-bottom: 25px;
+}
+
+/* Campos de entrada e seleção dentro do form-container */
+.form-container label {
+    display: block;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #555;
+}
+
+.form-container input[type="text"],
+.form-container input[type="date"],
+.form-container input[type="url"],
+.form-container input[type="number"],
+.form-container select,
+.form-container textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; 
+    font-size: 1em; /* Usa tamanho normal para formulários */
+    transition: border-color 0.3s;
+}
+
+.form-container input:focus,
+.form-container select:focus,
+.form-container textarea:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.2);
+}
+
+.form-container textarea {
+    resize: vertical; 
+}
+
+.form-container small {
+    display: block;
+    color: #888;
+    margin-top: 5px;
+    font-size: 0.85em;
+    margin-bottom: 15px;
+}
+
+/* Fieldset para agrupar campos */
+fieldset {
+    border: 1px solid #e0e0e0;
+    padding: 20px;
+    margin-bottom: 30px;
+    border-radius: 6px;
+}
+
+legend {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #333;
+    padding: 0 10px;
+}
+
+/* Estilo para selects múltiplos (Artistas, Produtores, Gêneros) */
+.form-container select[multiple] {
+    height: 120px; 
+    min-height: 120px; 
+    border: 1px solid #ccc;
+}
+
+/* Botões de Ação no Formulário */
+.form-actions {
+    margin-top: 30px;
+    display: flex;
+    gap: 15px;
+    justify-content: flex-start;
+}
+
+/* Reutilizando os estilos save-button e back-link existentes */
+.form-actions .save-button {
+    /* Corrigindo a cor para o contexto de "Adicionar" */
+    background-color: #28a745; 
+    color: white;
+    border: none;
+}
+
+.form-actions .back-link {
+    /* Cor do link de volta */
+    background-color: #6c757d; 
+    color: white;
+    border: none;
+}
+
+/* Responsividade do Formulário */
+@media (max-width: 600px) {
+    .form-container {
+        margin: 20px;
+        padding: 20px;
+    }
+    .form-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+}

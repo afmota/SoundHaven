@@ -3,6 +3,30 @@
 // Contém funções reutilizáveis para a aplicação.
 
 /**
+ * Formata uma string de data (YYYY-MM-DD) para o formato brasileiro (DD/MM/YYYY).
+ * Retorna 'N/D' se a data for inválida ou vazia.
+ *
+ * @param string|null $data A data no formato SQL (YYYY-MM-DD).
+ * @return string A data formatada (DD/MM/YYYY) ou 'N/D'.
+ */
+function formatar_data(?string $data): string
+{
+    if (empty($data) || $data === '0000-00-00') {
+        return 'N/D';
+    }
+    
+    // Tenta criar um objeto DateTime a partir da string
+    try {
+        $date_obj = new DateTime($data);
+        return $date_obj->format('d/m/Y');
+    } catch (Exception $e) {
+        // Retorna 'Data Inválida' em caso de erro de formatação/parsing
+        return 'N/D';
+    }
+}
+
+
+/**
  * Renderiza a tabela de álbuns e os links de paginação.
  * @param array $albuns Array de álbuns para exibir.
  * @param int $pagina_atual A página que está sendo exibida.
@@ -11,8 +35,8 @@
  * @param ?int $artista_filtro O ID do artista selecionado (pode ser NULL ou int).
  * @param ?int $tipo_filtro O ID do tipo de álbum (pode ser NULL ou int).
  * @param ?int $situacao_filtro O ID da situação (pode ser NULL ou int).
- * @param ?int $formato_filtro O ID do formato (pode ser NULL, int, ou -1).
- * @param int $deletado_filtro O filtro de status de deleção (0, 1 ou -1).
+ * @param ?int $formato_filtro O ID do formato (pode ser NULL ou int).
+ * @param ?int $deletado_filtro O filtro de status de deleção (0, 1 ou -1).
  * @return void Imprime o HTML da tabela e da paginacao.
  */
 function renderizar_tabela(
@@ -24,7 +48,7 @@ function renderizar_tabela(
     ?int $tipo_filtro = null, 
     ?int $situacao_filtro = null, 
     ?int $formato_filtro = null,
-    ?int $deletado_filtro = 0
+    ?int $deletado_filtro = 0 // NOVO: Padrão 0 para não quebrar a primeira carga
 ): void {
     if (empty($albuns)): ?>
         <p class="alerta">Nenhum álbum encontrado com os filtros aplicados.</p>
@@ -84,22 +108,22 @@ function renderizar_tabela(
                 if (!empty($termo_busca)) {
                     $query_params .= '&search_titulo=' . urlencode($termo_busca);
                 }
-                // Adiciona o filtro apenas se não for NULL
-                if ($artista_filtro !== null) {
+                if ($artista_filtro) {
                     $query_params .= '&filter_artista=' . $artista_filtro;
                 }
-                if ($tipo_filtro !== null) {
+                if ($tipo_filtro) {
                     $query_params .= '&filter_tipo=' . $tipo_filtro;
                 }
-                if ($situacao_filtro !== null) {
+                if ($situacao_filtro) {
                     $query_params .= '&filter_situacao=' . $situacao_filtro;
                 }
-                // Adiciona o filtro de formato (se for -1, ou um ID válido)
-                if ($formato_filtro !== null) {
+                if ($formato_filtro) {
+                    // Cuidado: Se for -1 (Sem Formato), precisa manter o valor para que o index.php entenda
                     $query_params .= '&filter_formato=' . $formato_filtro;
                 }
-                // Adiciona o filtro de deleção (se não for o padrão 0)
-                if ($deletado_filtro != 0) {
+                
+                // NOVO: Manter o filtro de deleção na paginação (se não for o padrão 0)
+                if ($deletado_filtro !== 0 && $deletado_filtro !== null) {
                     $query_params .= '&filter_deletado=' . $deletado_filtro;
                 }
                 
@@ -109,14 +133,14 @@ function renderizar_tabela(
                 <?php endif; ?>
 
                 <?php
-                // 2. Links para as páginas
+                // 2. Links para as páginas (Exibe um bloco de 5 páginas ao redor da atual)
                 $start = max(1, $pagina_atual - 2);
                 $end = min($total_paginas, $pagina_atual + 2);
 
                 for ($i = $start; $i <= $end; $i++):
                 ?>
                     <a href="index.php?p=<?php echo $i; ?><?php echo $query_params; ?>" 
-                       class="page-link <?php echo ($i == $pagina_atual) ? 'active' : ''; ?>">
+                        class="page-link <?php echo ($i == $pagina_atual) ? 'active' : ''; ?>">
                         <?php echo $i; ?>
                     </a>
                 <?php endfor; ?>
