@@ -21,6 +21,7 @@ try {
             c.data_lancamento,
             c.condicao,
             c.preco,
+            c.capa_url, -- CORRIGIDO: Inclui a URL da capa
             f.descricao AS formato_descricao,
             g.nome AS gravadora_nome
         FROM colecao AS c
@@ -39,7 +40,7 @@ try {
         'artistas' => 'colecao_artista',
         'produtores' => 'colecao_produtor',
         'generos' => 'colecao_genero',
-        'estilos' => 'colecao_estilo' // NOVO RELACIONAMENTO
+        'estilos' => 'colecao_estilo'
     ];
     
     $dados_mn = [];
@@ -47,42 +48,31 @@ try {
     foreach ($relacionamentos as $nome_relacionamento => $tabela_relacao) {
         if (empty($colecao_ids)) break;
 
-        // Determina qual tabela auxiliar (artistas, generos, estilos, etc) usar
-        $tabela_aux = rtrim($nome_relacionamento, 's'); // Ex: 'artistas' -> 'artista'
-        if ($nome_relacionamento == 'generos' || $nome_relacionamento == 'estilos') {
-            $tabela_aux = $nome_relacionamento; // Tabela já é 'generos' ou 'estilos'
-        }
-        if ($nome_relacionamento == 'artistas') {
-             $tabela_aux = 'artistas';
-        }
-        if ($nome_relacionamento == 'produtores') {
-             $tabela_aux = 'produtores';
-        }
+        // Determina a tabela auxiliar (artistas, produtores, generos, estilos)
+        $tabela_aux = $nome_relacionamento; 
         
-        $coluna_id = $tabela_aux . '_id'; // Ex: artista_id, genero_id
+        // Determina o nome da coluna de ID (singular_nome + _id)
+        $coluna_base_name = rtrim($nome_relacionamento, 's'); 
+        if ($nome_relacionamento === 'produtores') {
+             $coluna_base_name = 'produtor'; 
+        }
+        $coluna_id = $coluna_base_name . '_id'; 
+
+        // Define a coluna de exibição e se usaremos 'nome' ou 'descricao'
+        $coluna_display = 'nome';
+        if ($nome_relacionamento == 'generos' || $nome_relacionamento == 'estilos') {
+            $coluna_display = 'descricao';
+        }
         
         // Query para buscar todas as associações de uma vez
         $sql_mn = "
             SELECT 
                 cr.colecao_id, 
-                t.nome AS descricao -- usando 'nome' para artistas/produtores
+                t.{$coluna_display} AS descricao 
             FROM {$tabela_relacao} AS cr
             INNER JOIN {$tabela_aux} AS t ON cr.{$coluna_id} = t.id
             WHERE cr.colecao_id IN (" . implode(',', $colecao_ids) . ")
-            ORDER BY cr.colecao_id, t.nome ASC";
-
-        // Ajuste para tabelas que usam 'descricao' em vez de 'nome'
-        if ($nome_relacionamento == 'generos' || $nome_relacionamento == 'estilos') {
-             $sql_mn = "
-                SELECT 
-                    cr.colecao_id, 
-                    t.descricao
-                FROM {$tabela_relacao} AS cr
-                INNER JOIN {$tabela_aux} AS t ON cr.{$coluna_id} = t.id
-                WHERE cr.colecao_id IN (" . implode(',', $colecao_ids) . ")
-                ORDER BY cr.colecao_id, t.descricao ASC";
-        }
-
+            ORDER BY cr.colecao_id, t.{$coluna_display} ASC";
 
         $stmt_mn = $pdo->query($sql_mn);
         $resultados = $stmt_mn->fetchAll(PDO::FETCH_ASSOC);
@@ -90,7 +80,7 @@ try {
         // Organiza os resultados por colecao_id para injeção
         foreach ($resultados as $row) {
             $colecao_id = $row['colecao_id'];
-            $descricao = $row['descricao'] ?? $row['nome']; // Tenta descricao ou nome
+            $descricao = $row['descricao'];
             $dados_mn[$colecao_id][$nome_relacionamento][] = $descricao;
         }
     }
@@ -123,11 +113,11 @@ require_once 'header.php';
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>Título</th>
+                        <th>Capa</th> <th>Título</th>
                         <th>Artistas</th>
                         <th>Gêneros/Estilos</th>
                         <th>Formato/Condição</th>
-                        <th>Aquisição</th>
+                        <th>Aquisição/Preço</th>
                         <th>Ações</th>
                     </tr>
                 </thead>
@@ -144,10 +134,10 @@ require_once 'header.php';
                         $tags_str = '';
                         
                         if (!empty($generos_arr)) {
-                             $tags_str .= '<strong>Gêneros:</strong> ' . implode(', ', $generos_arr) . '<br>';
+                             $tags_str .= '<strong>Gêneros:</strong> ' . htmlspecialchars(implode(', ', $generos_arr)) . '<br>';
                         }
                          if (!empty($estilos_arr)) {
-                             $tags_str .= '<strong>Estilos:</strong> ' . implode(', ', $estilos_arr);
+                             $tags_str .= '<strong>Estilos:</strong> ' . htmlspecialchars(implode(', ', $estilos_arr));
                         }
                         if (empty($generos_arr) && empty($estilos_arr)) {
                             $tags_str = 'N/A';
@@ -156,10 +146,27 @@ require_once 'header.php';
                     ?>
                         <tr>
                             <td>
+                                <?php if (!empty($album['capa_url'])): ?>
+                                    <img src="<?php echo htmlspecialchars($album['capa_url']); ?>" 
+                                         alt="Capa de <?php echo htmlspecialchars($album['titulo']); ?>" 
+                                         style="width: 50px; height: 50px; object-fit: cover; border-radius: 3px;">
+                                <?php else: ?>
+                                    <div style="width: 50px; height: 50px; background-color: #eee; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #666; border-radius: 3px;">
+                                        S/ Capa
+                                    </div>
+                                <?php endif; ?>
+                            </td>
+
+                            <td>
                                 <strong><?php echo htmlspecialchars($album['titulo']); ?></strong>
                                 <small style="display: block;">
                                     Lançamento: <?php echo formatar_data($album['data_lancamento']); ?>
                                 </small>
+                                <?php if (!empty($album['gravadora_nome'])): ?>
+                                    <small style="display: block; font-weight: bold; color: #6c757d;">
+                                        Gravadora: <?php echo htmlspecialchars($album['gravadora_nome']); ?>
+                                    </small>
+                                <?php endif; ?>
                             </td>
                             
                             <td>
@@ -168,7 +175,7 @@ require_once 'header.php';
                                     $produtores_display = $album['relacionamentos']['produtores'] ?? [];
                                     if (!empty($produtores_display)):
                                 ?>
-                                    <small style="display: block;">(Produtores: <?php echo implode(', ', $produtores_display); ?>)</small>
+                                    <small style="display: block;">(Produtores: <?php echo htmlspecialchars(implode(', ', $produtores_display)); ?>)</small>
                                 <?php endif; ?>
                             </td>
 
