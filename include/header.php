@@ -62,15 +62,11 @@ if (!$logado && $pagina_atual != 'index.php' && $pagina_atual != 'login.php') {
                         <ul>
                             <li><a href="/dashboard.php"><i class="fas fa-home"></i> Dashboard</a></li>
                             <li><a href="/colecao/colecao.php"><i class="fas fa-list-alt"></i> Minha Coleção</a></li>
-                            
-                            <li><a href="/loja/store.php"><i class="fas fa-store"></i> Catálogo</a></li>
-                            
                             <li><a href="/estatisticas.php"><i class="fas fa-chart-line"></i> Estatísticas</a></li>
-                            
+                            <li><a href="/loja/store.php"><i class="fas fa-store"></i> Catálogo</a></li>
                             <?php if ($isAdmin): ?>
                                 <li><a href="/usuarios.php"><i class="fas fa-users-cog"></i> Gerenciar Usuários</a></li>
                             <?php endif; ?>
-                            
                             <li class="separator"></li>
                             <li><a href="/perfil.php"><i class="fas fa-user-circle"></i> Meu Perfil</a></li>
                             <li><a href="/logout.php" class="logout-link"><i class="fas fa-sign-out-alt"></i> Sair</a></li>

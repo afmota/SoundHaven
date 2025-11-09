@@ -381,6 +381,17 @@
     text-align: center;
 }
 
+/* Estilo para o Ano de Lançamento */
+.colecao-card-minimal-details .card-ano-minimal {
+    font-size: 0.75em; 
+    color: var(--cor-texto-secundario); 
+    margin: 2px 0 0 0; 
+    opacity: 0.7;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 /* 3. RODAPÉ DE AÇÕES */
 .card-footer-actions {
     display: flex;

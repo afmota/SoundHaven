@@ -8,7 +8,7 @@ require_once '../funcoes.php';
 
 // ----------------------------------------------------
 // 1. CARREGAR DADOS DAS TABELAS DE APOIO (Listas para Dropdowns)
-// ----------------------------------------------------
+// ----------------------------------------------------\
 $listas = [];
 $sqls = [
     'artistas' => "SELECT id, nome FROM artistas ORDER BY nome ASC",
@@ -31,7 +31,7 @@ try {
 
 // ----------------------------------------------------
 // 1.5. CARREGAR DADOS DO CATÁLOGO (STORE) SE HOUVER UM ID
-// ----------------------------------------------------
+// ----------------------------------------------------\
 $store_id = filter_input(INPUT_GET, 'store_id', FILTER_VALIDATE_INT);
 $dados_store = [];
 $artistas_pre_selecionados = [];
@@ -45,7 +45,8 @@ if ($store_id) {
                         s.data_lancamento,
                         s.artista_id,
                         s.tipo_id,
-                        s.formato_id
+                        s.formato_id,
+                        s.capa_url /* <<< ALTERAÇÃO 1: Incluindo capa_url */
                     FROM store AS s 
                     WHERE s.id = :id";
         
@@ -76,7 +77,7 @@ if ($store_id) {
 
 // ----------------------------------------------------
 // 2. PROCESSAMENTO DO FORMULÁRIO (INSERT com Transação SQL)
-// ----------------------------------------------------
+// ----------------------------------------------------\
 $mensagem_status = '';
 $tipo_mensagem = '';
 
@@ -203,7 +204,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // ----------------------------------------------------
 // 3. HTML DO FORMULÁRIO (Com campos de Adição Rápida)
-// ----------------------------------------------------
+// ----------------------------------------------------\
 require_once '../include/header.php'; 
 ?>
 
@@ -346,9 +347,8 @@ require_once '../include/header.php';
                             </div>
 
                             <label for="capa_url">URL da Capa (Imagem):</label>
-                            <input type="url" id="capa_url" name="capa_url" placeholder="http://ouhttps://...">
-
-                        </fieldset>
+                            <input type="url" id="capa_url" name="capa_url" placeholder="http://ouhttps://..."
+                                   value="<?php echo htmlspecialchars($dados_store['capa_url'] ?? ''); ?>"> </fieldset>
 
                         <fieldset>
                             <legend><i class="fas fa-tags"></i> Detalhes da Sua Cópia</legend>
@@ -391,7 +391,7 @@ require_once '../include/header.php';
                                     }
                                     
                                     if ($tipo_descricao) {
-                                        // CORREÇÃO APLICADA AQUI: O valor de $tipo_descricao (que já pode conter entidades do DB) é
+                                        // O valor de $tipo_descricao (que já pode conter entidades do DB) é
                                         // decodificado antes de ser concatenado e, em seguida, todo o bloco é codificado para exibição segura
                                         // no corpo do textarea, garantindo que "Não Informado" apareça corretamente.
                                         $texto_puro = html_entity_decode("Tipo de Álbum Original (Catálogo): " . $tipo_descricao . "\n", ENT_QUOTES, 'UTF-8');

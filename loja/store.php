@@ -57,8 +57,6 @@ $bind_params = [];
 // 1. Título (Busca segura com LIKE e binding)
 if (!empty($termo_busca)) {
     // 1. DECODIFICAÇÃO (OPCIONAL, mas resolve problemas persistentes de entidade HTML)
-    // Isso garante que se o filtro pegou a entidade &#39; em algum momento, 
-    // ela seja convertida de volta para o apóstrofo '
     $busca_tratada = html_entity_decode($termo_busca, ENT_QUOTES, 'UTF-8');
     
     $where_condicoes[] = "s.titulo LIKE :titulo";
@@ -79,10 +77,15 @@ if ($tipo_filtro !== null) {
     $bind_params[':tipo_id'] = $tipo_filtro;
 }
 
-// 4. Situação
+// 4. Situação (CORREÇÃO APLICADA AQUI)
 if ($situacao_filtro !== null) {
     $where_condicoes[] = "s.situacao = :situacao";
     $bind_params[':situacao'] = $situacao_filtro;
+} else {
+    // Aplica a exclusão PADRÃO (NÃO EXIBIR SITUAÇÃO 4 e 5) somente se o filtro de situação não foi selecionado.
+    // Se o usuário FILTRAR por 4 ou 5, esta condição é ignorada, resolvendo o problema.
+    // Os IDs 4 e 5 são 'Não Lançado/Privado' e 'Em Rascunho/Oculto' respectivamente.
+    $where_condicoes[] = "s.situacao NOT IN (4, 5)"; 
 }
 
 // 5. Formato (trata -1 para NULL no DB)
@@ -100,11 +103,6 @@ if ($deletado_filtro != -1) {
     $where_condicoes[] = "s.deletado = :deletado_filtro";
     $bind_params[':deletado_filtro'] = $deletado_filtro;
 }
-
-// NOVO FILTRO: NÃO EXIBIR SITUAÇÃO 4 (Não Lançado/Privado)
-// A SITUAÇÃO 5 (Em Rascunho/Oculto) JÁ É O PADRÃO PARA NÃO EXIBIR
-$where_condicoes[] = "s.situacao NOT IN (4, 5)";
-
 
 // Lógica de reset de página ao aplicar novo filtro
 $has_filter = !empty($termo_busca) || $artista_filtro !== null || $tipo_filtro !== null || $situacao_filtro !== null || $formato_filtro !== null || $deletado_filtro != 0;

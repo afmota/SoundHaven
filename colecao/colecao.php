@@ -19,6 +19,8 @@ try {
             c.id, 
             c.titulo, 
             c.capa_url,
+            YEAR(c.data_lancamento) AS ano_lancamento, /* MUDANÇA: Inclui o Ano */
+            f.descricao AS formato_descricao, /* MUDANÇA NOVA: Descrição do Formato */
             (
                 SELECT a.nome 
                 FROM colecao_artista AS ca
@@ -28,6 +30,7 @@ try {
                 LIMIT 1
             ) AS artista_principal
         FROM colecao AS c
+        LEFT JOIN formatos AS f ON c.formato_id = f.id /* MUDANÇA NOVA: JOIN para Formatos */
         WHERE c.ativo = 1 
         ORDER BY c.data_aquisicao DESC, c.titulo ASC";
 
@@ -73,11 +76,26 @@ require_once "../include/header.php";
                                 <?php else: ?>
                                     <div class="colecao-capa-grande no-cover">S/ Capa</div>
                                 <?php endif; ?>
-                            </div>
+                                
+                                <?php if (!empty($album['formato_descricao'])): ?>
+                                    <span class="album-format-tag <?php 
+                                        $formato = strtolower($album['formato_descricao']);
+                                        echo (str_contains($formato, 'lp') || str_contains($formato, 'vinyl')) 
+                                            ? 'tag-vinyl' : 'tag-cd'; 
+                                    ?>">
+                                        <?php echo htmlspecialchars($album['formato_descricao']); ?>
+                                    </span>
+                                <?php endif; ?>
+                                </div>
                             
                             <div class="card-details-main colecao-card-minimal-details">
                                 <h3 class="card-titulo-minimal"><?php echo htmlspecialchars($album["titulo"]); ?></h3>
                                 <p class="card-artista-minimal"><?php echo htmlspecialchars($album['artista_principal'] ?? 'Vários'); ?></p>
+                                
+                                <?php if (!empty($album['ano_lancamento'])): ?>
+                                    <p class="card-ano-minimal"><?php echo htmlspecialchars($album['ano_lancamento']); ?></p> 
+                                <?php endif; ?> 
+                                
                             </div>
 
                         </div>

@@ -27,6 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $titulo = html_entity_decode($titulo_input, ENT_QUOTES, 'UTF-8');
     
     $data_lancamento = filter_input(INPUT_POST, 'data_lancamento', FILTER_SANITIZE_SPECIAL_CHARS);
+    $capa_url = filter_input(INPUT_POST, 'capa_url', FILTER_VALIDATE_URL) ?: null; // <--- NOVO: URL da Capa
     
     // IDs (Relacionamentos 1:N)
     $artista_id = filter_input(INPUT_POST, 'artista_id', FILTER_VALIDATE_INT) ?: null;
@@ -46,6 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 titulo = :titulo, 
                 artista_id = :artista_id,
                 data_lancamento = :data_lancamento,
+                capa_url = :capa_url,                  /* <--- NOVO */
                 tipo_id = :tipo_id,
                 situacao = :situacao_id,
                 formato_id = :formato_id,
@@ -57,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ':titulo' => $titulo, // Usa o valor DECODIFICADO/PURO
             ':artista_id' => $artista_id,
             ':data_lancamento' => $data_lancamento ?: null,
+            ':capa_url' => $capa_url,                 /* <--- NOVO */
             ':tipo_id' => $tipo_id,
             ':situacao_id' => $situacao_id,
             ':formato_id' => $formato_id,
@@ -98,7 +101,8 @@ if ($id) {
     // 2.1. Buscar dados do álbum
     $sql_album = "SELECT 
                       s.id, s.titulo, s.data_lancamento, s.artista_id, 
-                      s.tipo_id, s.situacao, s.formato_id
+                      s.tipo_id, s.situacao, s.formato_id,
+                      s.capa_url                       /* <--- NOVO */
                     FROM store AS s
                     WHERE s.id = :id AND s.deletado = 0";
     
@@ -202,7 +206,8 @@ require_once '../include/header.php';
                                 <label for="data_lancamento">Data de Lançamento:</label>
                                 <input type="date" id="data_lancamento" name="data_lancamento"
                                         value="<?php echo htmlspecialchars($album['data_lancamento']); ?>">
-                            </div>
+
+                                <label for="capa_url">URL da Capa:</label>                                 <input type="url" id="capa_url" name="capa_url" placeholder="https://..."     value="<?php echo htmlspecialchars($album['capa_url'] ?? ''); ?>">   </div>
 
                             <div>
                                 <label for="tipo_id">Tipo:</label>
