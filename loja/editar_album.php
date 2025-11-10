@@ -22,12 +22,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 0. Sanitização e Validação
     $album_id = filter_input(INPUT_POST, 'album_id', FILTER_VALIDATE_INT);
     
+    // NOVO: Captura o ID da Situação Original para verificar se houve mudança
+    $situacao_original_id = filter_input(INPUT_POST, 'situacao_original_id', FILTER_VALIDATE_INT) ?: null; // <--- RE-INCORPORADO
+    
     // CORREÇÃO CRÍTICA APLICADA AQUI: Captura a string pura e decodifica para remover &#39;
     $titulo_input = filter_input(INPUT_POST, 'titulo', FILTER_DEFAULT);
     $titulo = html_entity_decode($titulo_input, ENT_QUOTES, 'UTF-8');
     
     $data_lancamento = filter_input(INPUT_POST, 'data_lancamento', FILTER_SANITIZE_SPECIAL_CHARS);
-    $capa_url = filter_input(INPUT_POST, 'capa_url', FILTER_VALIDATE_URL) ?: null; // <--- NOVO: URL da Capa
+    $capa_url = filter_input(INPUT_POST, 'capa_url', FILTER_VALIDATE_URL) ?: null; // <--- NOVO/CORRIGIDO: URL da Capa
     
     // IDs (Relacionamentos 1:N)
     $artista_id = filter_input(INPUT_POST, 'artista_id', FILTER_VALIDATE_INT) ?: null;
@@ -47,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 titulo = :titulo, 
                 artista_id = :artista_id,
                 data_lancamento = :data_lancamento,
-                capa_url = :capa_url,                  /* <--- NOVO */
+                capa_url = :capa_url,          /* <--- NOVO/CORRIGIDO */
                 tipo_id = :tipo_id,
                 situacao = :situacao_id,
                 formato_id = :formato_id,
@@ -59,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ':titulo' => $titulo, // Usa o valor DECODIFICADO/PURO
             ':artista_id' => $artista_id,
             ':data_lancamento' => $data_lancamento ?: null,
-            ':capa_url' => $capa_url,                 /* <--- NOVO */
+            ':capa_url' => $capa_url,          /* <--- NOVO/CORRIGIDO */
             ':tipo_id' => $tipo_id,
             ':situacao_id' => $situacao_id,
             ':formato_id' => $formato_id,
@@ -69,7 +72,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // ------------------------------------------------------
         // LÓGICA DE MIGRAÇÃO: Redireciona para o formulário da Coleção
         // ------------------------------------------------------
-        if ($situacao_id == $ID_SITUACAO_ADQUIRIDO) {
+        // A migração só ocorre se a nova situação for ADQUIRIDO (4) E a situação original for diferente (ou nula).
+        if ($situacao_id == $ID_SITUACAO_ADQUIRIDO && $situacao_original_id != $ID_SITUACAO_ADQUIRIDO) { // <--- RE-INCORPORADO
             
             $url_redirecionamento = "../colecao/adicionar_colecao.php?store_id=" . $album_id;
             
@@ -102,7 +106,7 @@ if ($id) {
     $sql_album = "SELECT 
                       s.id, s.titulo, s.data_lancamento, s.artista_id, 
                       s.tipo_id, s.situacao, s.formato_id,
-                      s.capa_url                       /* <--- NOVO */
+                      s.capa_url                       /* <--- NOVO/CORRIGIDO */
                     FROM store AS s
                     WHERE s.id = :id AND s.deletado = 0";
     
@@ -181,6 +185,7 @@ require_once '../include/header.php';
                     <form method="POST" action="editar_album.php" class="edit-form">
                         
                         <input type="hidden" name="album_id" value="<?php echo htmlspecialchars($album['id']); ?>">
+                        <input type="hidden" name="situacao_original_id" value="<?php echo htmlspecialchars($album['situacao']); ?>"> 
 
                         <div class="form-grid">
                             
@@ -207,7 +212,10 @@ require_once '../include/header.php';
                                 <input type="date" id="data_lancamento" name="data_lancamento"
                                         value="<?php echo htmlspecialchars($album['data_lancamento']); ?>">
 
-                                <label for="capa_url">URL da Capa:</label>                                 <input type="url" id="capa_url" name="capa_url" placeholder="https://..."     value="<?php echo htmlspecialchars($album['capa_url'] ?? ''); ?>">   </div>
+                                <label for="capa_url">URL da Capa:</label>
+                                <input type="url" id="capa_url" name="capa_url" placeholder="https://..."
+                                        value="<?php echo htmlspecialchars($album['capa_url'] ?? ''); ?>">
+                            </div>
 
                             <div>
                                 <label for="tipo_id">Tipo:</label>
@@ -242,7 +250,7 @@ require_once '../include/header.php';
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
-                                <small>Se você selecionar **Adquirido** (ID <?php echo $ID_SITUACAO_ADQUIRIDO; ?>), será redirecionado para detalhar a cópia na sua Coleção Pessoal.</small>
+                                <small>Se você selecionar **Adquirido** (ID <?php echo $ID_SITUACAO_ADQUIRIDO; ?>) e a situação for alterada, será redirecionado para detalhar a cópia na sua Coleção Pessoal.</small>
                             </div>
                         </div> 
                         
