@@ -33,7 +33,7 @@ try {
         FROM colecao AS c
         LEFT JOIN formatos AS f ON c.formato_id = f.id
         LEFT JOIN gravadoras AS g ON c.gravadora_id = g.id
-        WHERE c.id = :id AND c.ativo = 1";
+        WHERE c.id = :id";
 
     $stmt_colecao = $pdo->prepare($sql_colecao);
     $stmt_colecao->execute([':id' => $colecao_id]);

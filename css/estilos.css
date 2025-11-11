@@ -408,7 +408,7 @@ header {
 
 .anniversary-card {
     /* Cor de fundo para Aniversário (Amarelo/Laranja suave) */
-    background: linear-gradient(to bottom right, rgba(120, 53, 15, 0.2), rgba(146, 64, 14, 0.2)); 
+    background: linear-gradient(to bottom right, var(--cor-fundo-card), var(--cor-fundo-principal));
     border: 1px solid rgba(251, 191, 36, 0.3); 
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
     transition: none;
@@ -455,7 +455,7 @@ header {
 
 .album-cover-sm {
     width: 48px; 
-    height: 48px; 
+    height: 48px;
     background: linear-gradient(to bottom right, #facc15, #f97316); 
     border-radius: 6px;
     display: flex;
@@ -466,6 +466,8 @@ header {
 }
 
 .album-cover-sm img {
+    width: 100%;
+    height: 100%;
     object-fit: cover;
 }
 

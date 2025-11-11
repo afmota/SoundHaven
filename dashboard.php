@@ -211,7 +211,7 @@ require_once 'include/header.php';
 </div>
 
 <?php if (!empty($aniversariantes)): ?>
-<div class="anniversary-section container">
+<div class="anniversary-section container" style="padding-top: 10px;">
     <div class="card anniversary-card">
         <div class="card-header">
             <h2 class="anniversary-title">

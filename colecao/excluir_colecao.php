@@ -11,7 +11,7 @@ $id_colecao = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 
 if (!$id_colecao) {
     // Redireciona de volta com mensagem de erro
-    header("Location: colecao.php?status=erro&msg=" . urlencode("ID da Coleção não fornecido."));
+    header("Location: colecao.php?view_status=1&status=erro&msg=" . urlencode("ID da Coleção não fornecido."));
     exit;
 }
 
@@ -34,15 +34,15 @@ try {
     }
 
     // 2.2. Executa o UPDATE (Exclusão Lógica)
-    $sql_update = "UPDATE colecao SET ativo = 0 WHERE id = :id";
+    $sql_update = "UPDATE colecao SET ativo = 0, atualizado_em = NOW() WHERE id = :id";
     $stmt_update = $pdo->prepare($sql_update);
     $stmt_update->execute([':id' => $id_colecao]);
 
-    $mensagem_status = "Álbum '{$titulo}' removido (Exclusão Lógica) com sucesso da Coleção.";
+    $mensagem_status = "Álbum '{$titulo}' movido para a Lixeira (Exclusão Lógica).";
     $tipo_mensagem = 'sucesso';
 
 } catch (Exception $e) {
-    $mensagem_status = "Erro ao remover o álbum da Coleção: " . $e->getMessage();
+    $mensagem_status = "Erro ao mover o álbum para a Lixeira: " . $e->getMessage();
     $tipo_mensagem = 'erro';
 } catch (\PDOException $e) {
     $mensagem_status = "Falha no banco de dados ao tentar remover: " . $e->getMessage();
@@ -50,7 +50,8 @@ try {
 }
 
 // ----------------------------------------------------
-// 3. REDIRECIONAMENTO
+// 3. REDIRECIONAMENTO (Redireciona para a LIXEIRA)
 // ----------------------------------------------------
-header("Location: colecao.php?status={$tipo_mensagem}&msg=" . urlencode($mensagem_status));
+// NOVIDADE: view_status=0 para cair direto na Lixeira
+header("Location: colecao.php?view_status=0&status={$tipo_mensagem}&msg=" . urlencode($mensagem_status)); 
 exit;

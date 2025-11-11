@@ -671,3 +671,75 @@
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
+/* -------------------------------------- */
+/* AJUSTES PARA LAYOUT DE NAVEGAÇÃO/AÇÕES */
+/* -------------------------------------- */
+
+.page-header-actions {
+    display: flex;
+    justify-content: space-between; /* Alinha Título e Botões */
+    align-items: center;
+    margin-bottom: 25px; 
+    flex-wrap: wrap; /* Permite quebrar em telas menores */
+    gap: 15px; /* Espaçamento entre o título e os botões */
+}
+
+.view-switcher {
+    display: flex;
+    gap: 10px; /* Espaço entre os dois botões (Ativos e Lixeira) */
+}
+
+/* -------------------------------------- */
+/* REFINAMENTO DOS BOTÕES DE AÇÃO (view-switcher) */
+/* -------------------------------------- */
+
+/* Estilo Base dos botões de Ação na navegação */
+.view-switcher .btn-action {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 10px 15px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: bold;
+    /* Garante que o secondary-action tenha um visual de 'botão' */
+    transition: background-color 0.2s, color 0.2s, opacity 0.2s;
+}
+
+/* 1. Lixeira (Estilo de Destaque - Vermelho) */
+.btn-lixeira-toggle.primary-action {
+    /* Estado Ativo: Fundo vermelho, texto branco */
+    background-color: #dc3545 !important; 
+    color: white !important;
+    border: 1px solid #dc3545;
+}
+
+.btn-lixeira-toggle.secondary-action {
+    /* Estado Inativo: Texto vermelho, fundo escuro */
+    background-color: transparent;
+    color: #dc3545;
+    border: 1px solid #dc3545; /* Adiciona uma borda para parecer um botão */
+}
+
+.btn-lixeira-toggle.secondary-action:hover {
+    background-color: rgba(220, 53, 69, 0.1); /* Fundo sutil ao passar o mouse */
+}
+
+/* 2. Itens Ativos (Estilo de Destaque - Amarelo/Azul - usando classes existentes) */
+/* Se a primary-action é amarelo (destaque), já deve funcionar: */
+.view-switcher .primary-action {
+    /* Estilo do seu tema para botão primário (amarelo/azul) */
+    pointer-events: none; /* Desativa clique no botão ativo */
+}
+
+.view-switcher .secondary-action {
+    /* Estilo do seu tema para botão secundário (mais discreto) */
+    background-color: var(--cor-fundo-card);
+    color: var(--cor-texto-principal);
+    border: 1px solid var(--cor-borda);
+}
+
+.view-switcher .secondary-action:hover {
+    background-color: var(--cor-borda);
+}
