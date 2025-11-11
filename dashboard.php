@@ -185,7 +185,9 @@ require_once 'include/header.php';
 </div>
 
 <div class="metric-grid container" style="padding-top: 0px;">
-    <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_albuns; ?></div><div class="metric-label">Total de Álbuns</div></div><div class="icon-container cor-1"><i class="fas fa-compact-disc"></i></div></div></div>
+    <a href="colecao/colecao.php">
+        <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_albuns; ?></div><div class="metric-label">Total de Álbuns</div></div><div class="icon-container cor-1"><i class="fas fa-compact-disc"></i></div></div></div>
+    </a>
     <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_lps; ?></div><div class="metric-label">LPs (Vinyl)</div></div><div class="icon-container cor-2"><i class="fas fa-record-vinyl"></i></div></div></div>
     <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_cds; ?></div><div class="metric-label">CDs</div></div><div class="icon-container cor-3"><i class="fas fa-compact-disc"></i></div></div></div>
     <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_generos; ?></div><div class="metric-label">Gêneros Únicos</div></div><div class="icon-container cor-4"><i class="fas fa-chart-line"></i></div></div></div>
