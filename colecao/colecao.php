@@ -1,14 +1,18 @@
 <?php
 // Arquivo: colecao.php
 // Listagem dos itens da Coleção Pessoal (tabela 'colecao'). Com visualização em Modal.
-// NOVIDADE: Suporte à Lixeira (Soft Delete) e Navegação entre Itens Ativos/Excluídos.
+// NOVIDADE: Suporte à Paginação, Lixeira (Soft Delete) e Navegação entre Itens Ativos/Excluídos.
 
 require_once "../db/conexao.php";
 require_once "../funcoes.php";
 
 // ----------------------------------------------------
-// 1. FILTRO DE STATUS (ATIVO / LIXEIRA)
+// 1. CONFIGURAÇÃO DE PAGINAÇÃO E FILTRO DE STATUS
 // ----------------------------------------------------
+
+$limite_por_pagina = 25; 
+$pagina_atual = isset($_GET['p']) ? (int)$_GET['p'] : 1; 
+$offset = ($pagina_atual - 1) * $limite_por_pagina;
 
 // view_status: 1 (Ativos - padrão), 0 (Lixeira/Excluídos)
 $view_status = filter_input(INPUT_GET, 'view_status', FILTER_VALIDATE_INT) ?? 1;
@@ -19,14 +23,28 @@ if ($view_status == 1) {
 } elseif ($view_status == 0) {
     $where_ativo = "WHERE c.ativo = 0";
 }
-// OBS: Caso haja necessidade futura de listar todos, use um valor como -1 e remova a cláusula WHERE.
-
 // Variável para a barra de título
 $page_title = ($view_status == 0) ? 'Lixeira da Coleção' : 'Sua Coleção Pessoal';
 
 
 // ----------------------------------------------------
-// 2. CARREGAR DADOS BÁSICOS DA COLEÇÃO COM ARTISTA PRINCIPAL
+// 2. BUSCA DO TOTAL DE ITENS (Para a Paginação)
+// ----------------------------------------------------
+
+$total_itens = 0;
+try {
+    // Conta o total de itens (respeitando o filtro de ativo/lixeira)
+    $sql_count = "SELECT COUNT(id) FROM colecao AS c $where_ativo";
+    $total_itens = $pdo->query($sql_count)->fetchColumn();
+} catch (\PDOException $e) {
+    // Apenas ignora ou loga o erro de contagem, se necessário
+}
+
+$total_paginas = ceil($total_itens / $limite_por_pagina);
+
+
+// ----------------------------------------------------
+// 3. CARREGAR DADOS BÁSICOS DA COLEÇÃO COM PAGINAÇÃO
 // ----------------------------------------------------
 
 $colecao = [];
@@ -37,7 +55,7 @@ try {
             c.id, 
             c.titulo, 
             c.capa_url,
-            c.ativo, /* NOVIDADE: Precisa do status ATIVO para lógica do JS */
+            c.ativo, 
             YEAR(c.data_lancamento) AS ano_lancamento,
             f.descricao AS formato_descricao,
             (
@@ -50,10 +68,15 @@ try {
             ) AS artista_principal
         FROM colecao AS c
         LEFT JOIN formatos AS f ON c.formato_id = f.id
-        $where_ativo /* AQUI A CLÁUSULA WHERE É APLICADA */
-        ORDER BY c.data_aquisicao DESC, c.titulo ASC";
+        $where_ativo 
+        ORDER BY c.data_aquisicao DESC, c.titulo ASC
+        LIMIT :limite OFFSET :offset"; // <-- CLÁUSULAS DE PAGINAÇÃO
 
-    $stmt_colecao = $pdo->query($sql_colecao);
+    $stmt_colecao = $pdo->prepare($sql_colecao);
+    $stmt_colecao->bindParam(':limite', $limite_por_pagina, PDO::PARAM_INT);
+    $stmt_colecao->bindParam(':offset', $offset, PDO::PARAM_INT);
+    $stmt_colecao->execute();
+    
     $colecao = $stmt_colecao->fetchAll(PDO::FETCH_ASSOC);
 
 } catch (\PDOException $e) {
@@ -61,9 +84,24 @@ try {
 }
 
 // ----------------------------------------------------
-// 3. HTML DA PÁGINA
+// 4. HTML DA PÁGINA
 // ----------------------------------------------------
 require_once "../include/header.php";
+
+/**
+ * Função auxiliar para gerar o link da paginação, mantendo o view_status
+ * @param int $pagina
+ * @param int $view_status
+ * @return string
+ */
+function getPaginationLink($pagina, $view_status) {
+    $url = "colecao.php?p=$pagina";
+    if ($view_status !== 1) { // Só adiciona view_status se for diferente do padrão (1)
+        $url .= "&view_status=$view_status";
+    }
+    return $url;
+}
+
 ?>
 
 <div class="container">
@@ -71,7 +109,7 @@ require_once "../include/header.php";
         <div class="content-area">
 
 <div class="page-header-actions">
-    <h1><?php echo $page_title; ?> (Total: <?php echo count($colecao); ?> itens)</h1>
+    <h1><?php echo $page_title; ?> (Total: <?php echo $total_itens; ?> itens)</h1>
     <div class="view-switcher">
         <a href="colecao.php?view_status=1" class="btn-action <?php echo ($view_status == 1) ? 'primary-action' : 'secondary-action'; ?>">
             <i class="fas fa-box"></i> Itens Ativos
@@ -80,7 +118,7 @@ require_once "../include/header.php";
             <i class="fas fa-trash"></i> Lixeira
         </a>
     </div>
-</div>            
+</div>            
             <?php 
                 // Exibição da mensagem de status (sucesso/erro)
                 if (isset($_GET['status']) && !empty($_GET['msg'])) {
@@ -91,14 +129,40 @@ require_once "../include/header.php";
             
             <p style="margin-bottom: 20px; color: var(--cor-texto-secundario);">Clique na capa do álbum para ver todos os detalhes e opções de edição.</p>
             
+            <?php if ($total_paginas > 1): ?>
+            <div class="pagination-controls" style="display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-bottom: 20px;">
+                <span style="color: var(--cor-texto-secundario);">Página <?php echo $pagina_atual; ?> de <?php echo $total_paginas; ?></span>
+                
+                <?php if ($pagina_atual > 1): ?>
+                    <a href="<?php echo getPaginationLink($pagina_atual - 1, $view_status); ?>" class="btn-action secondary-action">
+                        <i class="fas fa-chevron-left"></i> Anterior
+                    </a>
+                <?php else: ?>
+                    <span class="btn-action secondary-action disabled" style="opacity: 0.5; cursor: not-allowed;">
+                        <i class="fas fa-chevron-left"></i> Anterior
+                    </span>
+                <?php endif; ?>
+
+                <?php if ($pagina_atual < $total_paginas): ?>
+                    <a href="<?php echo getPaginationLink($pagina_atual + 1, $view_status); ?>" class="btn-action secondary-action">
+                        Próxima <i class="fas fa-chevron-right"></i>
+                    </a>
+                <?php else: ?>
+                    <span class="btn-action secondary-action disabled" style="opacity: 0.5; cursor: not-allowed;">
+                        Próxima <i class="fas fa-chevron-right"></i>
+                    </span>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
+            
             <div class="colecao-card-grid">
                 <?php if (empty($colecao)): ?>
-                    <div class="card" style="padding: 20px; text-align: center;">
+                    <div class="card" style="padding: 20px; text-align: center; grid-column: 1 / -1;">
                         <p style="margin: 0;">
                             <?php 
                                 echo ($view_status == 0) 
                                     ? "A Lixeira está vazia. Nenhum item foi excluído logicamente." 
-                                    : "Sua coleção está vazia. Adicione itens a partir do Catálogo!"; 
+                                    : "Sua coleção está vazia ou não há itens na página atual. Adicione itens a partir do Catálogo!"; 
                             ?>
                         </p>
                     </div>
@@ -107,16 +171,16 @@ require_once "../include/header.php";
                     <?php foreach ($colecao as $album): ?>
                         
                         <div class="card colecao-item-card open-modal" 
-                             data-album-id="<?php echo $album['id']; ?>" 
-                             data-ativo="<?php echo $album['ativo']; ?>" /* NOVIDADE: Data attribute para status */
-                             style="cursor: pointer;">
+                            data-album-id="<?php echo $album['id']; ?>" 
+                            data-ativo="<?php echo $album['ativo']; ?>" 
+                            style="cursor: pointer;">
                             
                             <div class="card-capa-wrapper">
                                 <?php if (!empty($album['capa_url'])): ?>
                                     <img src="<?php echo htmlspecialchars($album['capa_url']); ?>"
-                                         alt="Capa de <?php echo htmlspecialchars($album['titulo']); ?>"
-                                         class="colecao-capa-grande"
-                                         loading="lazy">
+                                        alt="Capa de <?php echo htmlspecialchars($album['titulo']); ?>"
+                                        class="colecao-capa-grande"
+                                        loading="lazy">
                                 <?php else: ?>
                                     <div class="colecao-capa-grande no-cover">S/ Capa</div>
                                 <?php endif; ?>
@@ -151,12 +215,38 @@ require_once "../include/header.php";
                     
                 <?php endif; ?>
             </div>
+            
+            <?php if ($total_paginas > 1): ?>
+                <div class="pagination-controls" style="display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 20px;">
+                    <span style="color: var(--cor-texto-secundario);">Página <?php echo $pagina_atual; ?> de <?php echo $total_paginas; ?></span>
+                    
+                    <?php if ($pagina_atual > 1): ?>
+                        <a href="<?php echo getPaginationLink($pagina_atual - 1, $view_status); ?>" class="btn-action secondary-action">
+                            <i class="fas fa-chevron-left"></i> Anterior
+                        </a>
+                    <?php else: ?>
+                        <span class="btn-action secondary-action disabled" style="opacity: 0.5; cursor: not-allowed;">
+                            <i class="fas fa-chevron-left"></i> Anterior
+                        </span>
+                    <?php endif; ?>
+
+                    <?php if ($pagina_atual < $total_paginas): ?>
+                        <a href="<?php echo getPaginationLink($pagina_atual + 1, $view_status); ?>" class="btn-action secondary-action">
+                            Próxima <i class="fas fa-chevron-right"></i>
+                        </a>
+                    <?php else: ?>
+                        <span class="btn-action secondary-action disabled" style="opacity: 0.5; cursor: not-allowed;">
+                            Próxima <i class="fas fa-chevron-right"></i>
+                        </span>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>
 
 <div id="albumModal" class="modal-overlay">
-    <div class="modal-content">
+<div class="modal-content">
         <span class="modal-close">&times;</span>
         
         <div id="modal-loader" style="text-align: center; padding: 50px;">
@@ -225,14 +315,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const modal = document.getElementById('albumModal');
     const modalContent = modal.querySelector('.modal-content');
     const closeBtn = modal.querySelector('.modal-close');
-    const cardElements = document.querySelectorAll('.colecao-item-card.open-modal');
+    // NOTE: Esta seleção só pegará os itens da página atual, o que é o comportamento desejado.
+    const cardElements = document.querySelectorAll('.colecao-item-card.open-modal'); 
     const detailsDiv = document.getElementById('modal-details');
     const loaderDiv = document.getElementById('modal-loader');
     
     // Configurações e URLs
     const editUrlBase = 'editar_colecao.php?id=';
     const deleteUrlBase = 'excluir_colecao.php?id=';
-    const restoreUrlBase = 'restaurar_colecao.php?id='; // NOVIDADE: URL de Restauração
+    const restoreUrlBase = 'restaurar_colecao.php?id='; 
     const fetchUrlBase = 'fetch_album_details.php?id=';
 
     // Função para fechar o modal
@@ -242,7 +333,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loaderDiv.style.display = 'block';
         modalContent.classList.remove('loaded');
         document.getElementById('modal-relacionamentos').innerHTML = ''; 
-        document.getElementById('modal-actions').innerHTML = ''; // Limpa as ações
+        document.getElementById('modal-actions').innerHTML = ''; 
     };
 
     // Fechar ao clicar no 'x' e fora do modal
@@ -264,7 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
     cardElements.forEach(card => {
         card.addEventListener('click', async (e) => {
             const albumId = e.currentTarget.dataset.albumId;
-            const albumAtivo = e.currentTarget.dataset.ativo; // NOVIDADE: Captura o status ATIVO
+            const albumAtivo = e.currentTarget.dataset.ativo; 
             
             // 1. Mostrar modal e loader
             modal.style.display = 'flex';
@@ -312,9 +403,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     appendRelationship('Produtores', album.relacionamentos.produtores);
 
 
-                    // NOVIDADE: Lógica Condicional para Links de Ação
+                    // Lógica Condicional para Links de Ação (Manteve-se o mesmo)
                     const actionsDiv = document.getElementById('modal-actions');
-                    actionsDiv.innerHTML = ''; // Limpa antes de preencher
+                    actionsDiv.innerHTML = ''; 
                     
                     if (albumAtivo == 1) { // Item ATIVO
                         actionsDiv.innerHTML = `
@@ -332,7 +423,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             </a>
                         `;
                     }
-
 
                     // 4. Esconder loader e mostrar detalhes
                     loaderDiv.style.display = 'none';

@@ -743,3 +743,25 @@
 .view-switcher .secondary-action:hover {
     background-color: var(--cor-borda);
 }
+
+/* Garante que o span (botão desabilitado) tenha a mesma aparência de um botão inativo */
+.pagination-controls .disabled {
+    /* O estilo de opacidade e cursor é definido inline no PHP, mas podemos garantir o padding */
+    pointer-events: none; /* Impede qualquer clique ou hover, só para garantir */
+    padding: 8px 15px; /* Alinha com o botão btn-action */
+    border-radius: 4px;
+    /* Opacidade: 0.5 e cursor: not-allowed já estão definidos inline, mas se for reutilizar a classe pode-se colocar aqui */
+}
+
+/* Opcional: Se quiser que o botão disabled não reaja ao hover */
+.pagination-controls .disabled:hover {
+    box-shadow: none;
+    opacity: 0.5 !important;
+}
+
+/* Garante alinhamento dos ícones com o texto em todos os botões de ação */
+.btn-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px; /* Espaçamento entre o ícone e o texto */
+}
