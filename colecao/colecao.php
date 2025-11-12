@@ -2,6 +2,7 @@
 // Arquivo: colecao.php
 // Listagem dos itens da Coleção Pessoal (tabela 'colecao'). Com visualização em Modal.
 // NOVIDADE: Suporte à Paginação, Lixeira (Soft Delete) e Navegação entre Itens Ativos/Excluídos.
+// NOVIDADE: Botão no modal para importar lista de faixas via API do Discogs.
 
 require_once "../db/conexao.php";
 require_once "../funcoes.php";
@@ -118,7 +119,7 @@ function getPaginationLink($pagina, $view_status) {
             <i class="fas fa-trash"></i> Lixeira
         </a>
     </div>
-</div>            
+</div>            
             <?php 
                 // Exibição da mensagem de status (sucesso/erro)
                 if (isset($_GET['status']) && !empty($_GET['msg'])) {
@@ -300,6 +301,13 @@ function getPaginationLink($pagina, $view_status) {
                         <h3>Observações</h3>
                         <p id="modal-obs-text" style="white-space: pre-wrap;"></p>
                     </div>
+
+                                        <div id="modal-tracklist" class="modal-details-section">
+                        <h3>Lista de Faixas</h3>
+                        <ul id="tracklist-ul" style="list-style-type: none; padding-left: 0;">
+                                                        <li id="tracklist-status">Carregando lista de faixas...</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
             
@@ -315,7 +323,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const modal = document.getElementById('albumModal');
     const modalContent = modal.querySelector('.modal-content');
     const closeBtn = modal.querySelector('.modal-close');
-    // NOTE: Esta seleção só pegará os itens da página atual, o que é o comportamento desejado.
     const cardElements = document.querySelectorAll('.colecao-item-card.open-modal'); 
     const detailsDiv = document.getElementById('modal-details');
     const loaderDiv = document.getElementById('modal-loader');
@@ -325,6 +332,62 @@ document.addEventListener('DOMContentLoaded', () => {
     const deleteUrlBase = 'excluir_colecao.php?id=';
     const restoreUrlBase = 'restaurar_colecao.php?id='; 
     const fetchUrlBase = 'fetch_album_details.php?id=';
+    const importApiUrl = 'importar_faixas_api.php'; // URL para a API de importação
+
+    // =========================================================================
+    // FUNÇÃO DE IMPORTAÇÃO DE FAIXAS (NOVA LÓGICA)
+    // =========================================================================
+
+    /**
+     * Envia uma requisição POST para importar a lista de faixas via Discogs.
+     * @param {number} colecao_id ID do item na coleção.
+     * @param {string} numero_catalogo Número de catálogo para a busca.
+     * @param {HTMLElement} buttonElement O botão que disparou a ação para feedback visual.
+     */
+    async function handleImportFaixas(colecao_id, numero_catalogo, buttonElement) {
+        if (!confirm(`Confirma a importação da lista de faixas do Discogs para o ID ${colecao_id} (Catálogo: ${numero_catalogo})? Isso substituirá quaisquer faixas existentes.`)) {
+            return;
+        }
+        
+        // Desativa o botão e mostra o estado de loading
+        const originalText = buttonElement.innerHTML;
+        buttonElement.disabled = true;
+        buttonElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Importando...';
+        
+        const formData = new FormData();
+        formData.append('colecao_id', colecao_id);
+        formData.append('numero_catalogo', numero_catalogo);
+        
+        try {
+            const response = await fetch(importApiUrl, {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                alert(`SUCESSO: ${result.message}`);
+                // Recarrega a página para atualizar o status e o modal em uma próxima abertura
+                window.location.reload(); 
+            } else {
+                // Erro da API (ex: 404 do Discogs, erro de banco de dados)
+                alert(`ERRO NA IMPORTAÇÃO: ${result.message || 'Falha desconhecida.'}`);
+            }
+            
+        } catch (error) {
+            console.error('Erro de rede:', error);
+            alert('Erro de comunicação com o servidor. Verifique sua conexão.');
+        } finally {
+            // Restaura o botão em caso de erro
+            buttonElement.disabled = false;
+            buttonElement.innerHTML = originalText;
+        }
+    }
+
+    // =========================================================================
+    // FUNÇÕES GERAIS DO MODAL
+    // =========================================================================
 
     // Função para fechar o modal
     const closeModal = () => {
@@ -332,8 +395,10 @@ document.addEventListener('DOMContentLoaded', () => {
         detailsDiv.style.display = 'none';
         loaderDiv.style.display = 'block';
         modalContent.classList.remove('loaded');
+        // Limpar áreas dinâmicas
         document.getElementById('modal-relacionamentos').innerHTML = ''; 
         document.getElementById('modal-actions').innerHTML = ''; 
+        document.getElementById('tracklist-ul').innerHTML = '<li id="tracklist-status">Carregando lista de faixas...</li>'; // Limpa a lista de faixas
     };
 
     // Fechar ao clicar no 'x' e fora do modal
@@ -354,6 +419,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Lógica para abrir e popular o modal
     cardElements.forEach(card => {
         card.addEventListener('click', async (e) => {
+            // Certifica-se de limpar o conteúdo anterior ao carregar
+            closeModal(); // Usa closeModal para resetar o estado visual
+            
             const albumId = e.currentTarget.dataset.albumId;
             const albumAtivo = e.currentTarget.dataset.ativo; 
             
@@ -367,8 +435,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (result.success && result.album) {
                     const album = result.album;
-                    
-                    // 3. Popular o conteúdo do modal (Manteve-se o mesmo)
+                    const catalogo = album.numero_catalogo; // Obtém o NÚMERO DE CATÁLOGO
+
+                    // 3. Popular o conteúdo do modal 
                     document.getElementById('modal-capa-img').src = album.capa_url || '../assets/no-cover.png'; 
                     document.getElementById('modal-titulo').textContent = album.titulo;
                     
@@ -382,11 +451,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('modal-aquisicao').textContent = album.data_aquisicao_formatada || 'N/A';
                     document.getElementById('modal-preco').textContent = album.preco_formatado;
                     document.getElementById('modal-condicao').textContent = album.condicao || 'N/A';
-                    document.getElementById('modal-catalogo').textContent = album.numero_catalogo || 'N/A';
+                    document.getElementById('modal-catalogo').textContent = catalogo || 'N/A'; // Popula o Nº Catálogo
                     
                     document.getElementById('modal-obs-text').textContent = album.observacoes || 'Nenhuma observação registrada.';
                     
-                    // Relacionamentos M:N
+                    // População dos relacionamentos (Gêneros, Estilos, Produtores)
                     const relContainer = document.getElementById('modal-relacionamentos');
                     relContainer.innerHTML = '';
 
@@ -402,19 +471,58 @@ document.addEventListener('DOMContentLoaded', () => {
                     appendRelationship('Estilos', album.relacionamentos.estilos);
                     appendRelationship('Produtores', album.relacionamentos.produtores);
 
+                    // População da lista de faixas (Vazio se fetch_album_details.php não for atualizado)
+                    const tracklistUl = document.getElementById('tracklist-ul');
+                    tracklistUl.innerHTML = ''; // Limpa o placeholder
 
-                    // Lógica Condicional para Links de Ação (Manteve-se o mesmo)
+                    if (album.faixas && album.faixas.length > 0) {
+                        album.faixas.forEach(faixa => {
+                            const li = document.createElement('li');
+                            // Exibe as faixas no formato "Num. Título (Duração)"
+                            li.textContent = `${faixa.numero_faixa}. ${faixa.titulo} (${faixa.duracao || 'N/A'})`;
+                            tracklistUl.appendChild(li);
+                        });
+                    } else {
+                        tracklistUl.innerHTML = '<li id="tracklist-status" style="color: var(--cor-texto-secundario);">Nenhuma lista de faixas registrada.</li>';
+                    }
+
+                    // Lógica Condicional para Links de Ação (ATUALIZADA)
                     const actionsDiv = document.getElementById('modal-actions');
                     actionsDiv.innerHTML = ''; 
                     
                     if (albumAtivo == 1) { // Item ATIVO
+                        
+                        let importButtonHtml = '';
+                        // Adiciona o botão de importação SE o número de catálogo estiver presente
+                        if (catalogo && catalogo.trim() !== '' && catalogo.trim() !== 'N/A') {
+                            importButtonHtml = `
+                                <button id="btn-importar-faixas" class="action-icon" 
+                                    style="background-color: var(--cor-destaque); color: var(--cor-fundo-card); margin-right: 10px; border: none; cursor: pointer; padding: 8px 15px; border-radius: 4px; font-weight: bold;">
+                                    <i class="fas fa-music"></i> Importar Faixas (Discogs)
+                                </button>
+                            `;
+                        } else {
+                            importButtonHtml = `<span style="color: var(--cor-texto-secundario); margin-right: 10px;">Preencha o Nº Catálogo para importar faixas.</span>`;
+                        }
+
                         actionsDiv.innerHTML = `
+                            ${importButtonHtml}
                             <a href="${editUrlBase + albumId}" class="edit action-icon"><i class="fa fa-pencil-alt"></i> Editar</a>
                             <a href="${deleteUrlBase + albumId}" class="delete action-icon"
                                 onclick="return confirm('Tem certeza que deseja REMOVER (Exclusão Lógica) este item da sua coleção?');">
                                 <i class="fa fa-trash-alt"></i> Remover
                             </a>
                         `;
+
+                        // 4. Anexar o listener de evento ao novo botão
+                        const importBtn = document.getElementById('btn-importar-faixas');
+                        if (importBtn) {
+                            importBtn.addEventListener('click', (e) => {
+                                e.preventDefault();
+                                handleImportFaixas(albumId, catalogo, importBtn);
+                            });
+                        }
+                        
                     } else { // Item REMOVIDO / LIXEIRA
                         actionsDiv.innerHTML = `
                             <a href="${restoreUrlBase + albumId}" class="restore action-icon" style="background-color: #28a745;"
@@ -424,7 +532,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         `;
                     }
 
-                    // 4. Esconder loader e mostrar detalhes
+                    // 5. Esconder loader e mostrar detalhes
                     loaderDiv.style.display = 'none';
                     detailsDiv.style.display = 'block';
                     modalContent.classList.add('loaded');

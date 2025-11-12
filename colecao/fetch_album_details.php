@@ -93,6 +93,21 @@ try {
         $album["relacionamentos"][$nome_relacionamento] = $resultados;
     }
 
+    // 3. NOVO: BUSCA DAS FAIXAS SALVAS (colecao_faixas)
+    $sql_faixas = "
+        SELECT 
+            numero_faixa, 
+            titulo, 
+            duracao 
+        FROM colecao_faixas
+        WHERE colecao_id = :id
+        ORDER BY numero_faixa ASC";
+            
+    $stmt_faixas = $pdo->prepare($sql_faixas);
+    $stmt_faixas->execute([':id' => $colecao_id]);
+    $album["faixas"] = $stmt_faixas->fetchAll(PDO::FETCH_ASSOC); // Adiciona as faixas ao array principal
+
+
     // Formatação adicional para a interface
     $album['data_aquisicao_formatada'] = formatar_data($album['data_aquisicao']);
     $album['data_lancamento_formatada'] = formatar_data($album['data_lancamento']);
