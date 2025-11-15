@@ -82,6 +82,9 @@ if (!$logado && $pagina_atual != 'index.php' && $pagina_atual != 'login.php') {
     </div>
 </header>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="/js/filtro.js"></script>
+<script src="/js/scripts.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const dropdownContainer = document.getElementById('profileDropdown');
