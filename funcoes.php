@@ -310,5 +310,33 @@ function renderizar_paginacao(int $pagina_atual, int $total_paginas, string $lin
     echo '</div>';
 }
 
-?>
+// Funções de conversão (Exemplo, se não estiver no seu funcoes.php)
+function time_to_seconds(string $time_str): int {
+    $parts = array_reverse(explode(':', $time_str));
+    $seconds = 0;
+    if (isset($parts[0])) $seconds += (int) $parts[0]; // Segundos
+    if (isset($parts[1])) $seconds += (int) $parts[1] * 60; // Minutos
+    if (isset($parts[2])) $seconds += (int) $parts[2] * 3600; // Horas
+    return $seconds;
+}
 
+// Função para formatar segundos de volta para H:MM:SS ou M:SS (Para exibição)
+function format_seconds(int $seconds): string {
+    if ($seconds < 60) {
+        return "0:" . str_pad($seconds, 2, '0', STR_PAD_LEFT);
+    }
+    $h = floor($seconds / 3600);
+    $m = floor(($seconds % 3600) / 60);
+    $s = $seconds % 60;
+
+    $output = '';
+    if ($h > 0) {
+        $output .= $h . ':' . str_pad($m, 2, '0', STR_PAD_LEFT) . ':';
+    } else {
+        $output .= $m . ':';
+    }
+    $output .= str_pad($s, 2, '0', STR_PAD_LEFT);
+    return $output;
+}
+
+?>
