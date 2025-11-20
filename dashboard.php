@@ -89,6 +89,7 @@ try {
         ':hoje_mes_dia_aquisicao' => $hoje_mes_dia
     ]);
     $albuns_aniversariantes = $stmt_aniversariantes->fetchAll(PDO::FETCH_ASSOC);
+    $aniversariantes = []; // Inicializa a variável para evitar erro caso não haja aniversariantes
 
     if (!empty($albuns_aniversariantes)) {
         $ids_aniversariantes = implode(',', array_column($albuns_aniversariantes, 'id'));
@@ -120,6 +121,7 @@ try {
     }
 
     // 4. QUERY DOS ÚLTIMOS ÁLBUNS
+    $ultimos_albuns = []; // Inicializa a variável para evitar erro caso não haja álbuns
     $stmt_ids = $pdo->prepare("
         SELECT id FROM colecao WHERE ativo = 1 ORDER BY data_aquisicao DESC LIMIT 5
     ");
@@ -185,11 +187,22 @@ require_once 'include/header.php';
 </div>
 
 <div class="metric-grid container" style="padding-top: 0px;">
-    <a href="colecao/colecao.php">
+    <!-- CARD DE TOTAL DE ÁLBUNS: Link para colecao.php (sem filtro) -->
+    <a href="colecao/colecao.php" style="text-decoration: none; color: inherit;">
         <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_albuns; ?></div><div class="metric-label">Total de Álbuns</div></div><div class="icon-container cor-1"><i class="fas fa-compact-disc"></i></div></div></div>
     </a>
-    <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_lps; ?></div><div class="metric-label">LPs (Vinyl)</div></div><div class="icon-container cor-2"><i class="fas fa-record-vinyl"></i></div></div></div>
-    <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_cds; ?></div><div class="metric-label">CDs</div></div><div class="icon-container cor-3"><i class="fas fa-compact-disc"></i></div></div></div>
+    
+    <!-- CARD DE LP (Vinyl): Link para colecao.php?formato=LP -->
+    <a href="colecao/colecao.php?formato=LP" style="text-decoration: none; color: inherit;">
+        <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_lps; ?></div><div class="metric-label">LPs (Vinyl)</div></div><div class="icon-container cor-2"><i class="fas fa-record-vinyl"></i></div></div></div>
+    </a>
+    
+    <!-- CARD DE CD: Link para colecao.php?formato=CD -->
+    <a href="colecao/colecao.php?formato=CD" style="text-decoration: none; color: inherit;">
+        <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_cds; ?></div><div class="metric-label">CDs</div></div><div class="icon-container cor-3"><i class="fas fa-compact-disc"></i></div></div></div>
+    </a>
+    
+    <!-- Outros cards (Gêneros, Artistas, etc.) continuam sem links por enquanto -->
     <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_generos; ?></div><div class="metric-label">Gêneros Únicos</div></div><div class="icon-container cor-4"><i class="fas fa-chart-line"></i></div></div></div>
     <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_artistas; ?></div><div class="metric-label">Artistas Únicos</div></div><div class="icon-container cor-5"><i class="fas fa-users"></i></div></div></div>
     <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_gravadoras; ?></div><div class="metric-label">Gravadoras</div></div><div class="icon-container cor-6"><i class="fas fa-building"></i></div></div></div>

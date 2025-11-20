@@ -72,7 +72,7 @@ try {
         
     $stmt_artistas = $pdo->query($sql_artistas);
     $stats['top_artistas'] = $stmt_artistas->fetchAll(PDO::FETCH_ASSOC);
-    
+
     // ----------------------------------------------------
     // 4. TOP 5 ARTISTAS (POR FAIXA)
     // ----------------------------------------------------
@@ -225,7 +225,7 @@ try {
     ];
     
     // ----------------------------------------------------
-    // 9. DISTRIBUIÇÃO POR ANO DE LANÇAMENTO (Corrigido)
+    // 9. DISTRIBUIÇÃO POR ANO DE LANÇAMENTO (Todos os anos, ASC)
     // ----------------------------------------------------
     $sql_anos = "
         SELECT 
@@ -235,7 +235,7 @@ try {
         WHERE ativo = 1 
         AND data_lancamento IS NOT NULL
         GROUP BY ano
-        ORDER BY ano DESC";
+        ORDER BY ano ASC"; // ORDENADO POR ANO ASCENDENTE
             
     $stmt_anos = $pdo->query($sql_anos);
     $stats['anos'] = $stmt_anos->fetchAll(PDO::FETCH_ASSOC);
@@ -312,68 +312,59 @@ require_once 'include/header.php';
                 </div>
             </div>
 
-
-            <div class="stats-detail-grid" style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 30px;">
+            <div class="stats-detail-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
                 
-                <div style="display: grid; grid-template-rows: auto auto auto; gap: 30px;">
+                <div class="card" style="padding: 20px;">
+                    <h3 style="border-bottom: 2px solid var(--cor-borda); padding-bottom: 5px; margin-bottom: 15px;">Distribuição por Formato 💿</h3>
+                    
+                    <?php if (!empty($stats['formatos'])): ?>
+                        <div style="width: 100%; max-width: 400px; margin: 0 auto 20px;">
+                            <canvas id="formatoPieChart"></canvas>
+                        </div>
+                    <?php endif; ?>
+                    
+                    <table class="data-table" style="width: 100%;">
+                        <thead>
+                            <tr style="color: var(--cor-destaque)">
+                                <th>Formato</th>
+                                <th>Quantidade</th>
+                                <th>Percentual</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($stats['formatos'])): ?>
+                                <tr><td colspan="3" style="text-align: center;">Nenhum item com formato registrado.</td></tr>
+                            <?php else: ?>
+                                <?php foreach ($stats['formatos'] as $formato): ?>
+                                    <tr>
+                                        <td><?php echo htmlspecialchars($formato['formato']); ?></td>
+                                        <td><?php echo $formato['total']; ?></td>
+                                        <td>
+                                            <?php echo number_format($formato['percentual'], 1, ',', '.'); ?>%
+                                            <div style="background-color: var(--cor-fundo-principal); height: 5px; margin-top: 5px; border-radius: 2px;">
+                                                <div style="width: <?php echo $formato['percentual']; ?>%; height: 100%; background-color: #007bff; border-radius: 2px;"></div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div style="display: grid; grid-template-rows: auto auto; gap: 30px;">
                     
                     <div class="card" style="padding: 20px;">
-                        <h3 style="border-bottom: 2px solid var(--cor-borda); padding-bottom: 5px; margin-bottom: 15px;">Distribuição por Formato 💿</h3>
-                        <table class="data-table" style="width: 100%;">
-                            <thead>
-                                <tr style="color: var(--cor-destaque)">
-                                    <th>Formato</th>
-                                    <th>Quantidade</th>
-                                    <th>Percentual</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php if (empty($stats['formatos'])): ?>
-                                    <tr><td colspan="3" style="text-align: center;">Nenhum item com formato registrado.</td></tr>
-                                <?php else: ?>
-                                    <?php foreach ($stats['formatos'] as $formato): ?>
-                                        <tr>
-                                            <td><?php echo htmlspecialchars($formato['formato']); ?></td>
-                                            <td><?php echo $formato['total']; ?></td>
-                                            <td>
-                                                <?php echo number_format($formato['percentual'], 1, ',', '.'); ?>%
-                                                <div style="background-color: var(--cor-fundo-principal); height: 5px; margin-top: 5px; border-radius: 2px;">
-                                                    <div style="width: <?php echo $formato['percentual']; ?>%; height: 100%; background-color: #007bff; border-radius: 2px;"></div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <div class="card" style="padding: 20px;">
-                        <h3 style="border-bottom: 2px solid var(--cor-borda); padding-bottom: 5px; margin-bottom: 15px;">Distribuição por Ano de Lançamento (Top 10) 📅</h3>
+                        <h3 style="border-bottom: 2px solid var(--cor-borda); padding-bottom: 5px; margin-bottom: 15px;">Distribuição por Ano de Lançamento 📅</h3>
                         <?php if (empty($stats['anos'])): ?>
                             <p style="text-align: center;">Nenhum ano de lançamento registrado.</p>
                         <?php else: ?>
                             
-                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
-                                <?php 
-                                $counter = 0;
-                                $limit = 10;
-                                $max_total_anos = $total_itens_anos > 0 ? $total_itens_anos : 1;
-                                
-                                foreach ($stats['anos'] as $ano): 
-                                    if ($counter >= $limit) break; 
-                                    $percentual_ano = ($ano['total'] / $max_total_anos) * 100;
-                                ?>
-                                    <div style="margin-bottom: 10px;">
-                                        <span style="font-weight: bold;"><?php echo $ano['ano']; ?></span> 
-                                        (<?php echo $ano['total']; ?> itens - <?php echo number_format($percentual_ano, 1, ',', '.'); ?>%)
-                                        <div style="background-color: var(--cor-fundo-principal); height: 8px; margin-top: 2px; border-radius: 4px;">
-                                            <div style="width: <?php echo $percentual_ano; ?>%; height: 100%; background-color: var(--cor-destaque); border-radius: 4px;"></div>
-                                        </div>
-                                    </div>
-                                <?php $counter++; endforeach; ?>
+                            <div style="width: 100%; margin: 0 auto;">
+                                <canvas id="anosBarChart"></canvas>
                             </div>
-                            <?php endif; ?>
+                            
+                        <?php endif; ?>
                     </div>
                     
                     <div class="card" style="padding: 20px;">
@@ -388,121 +379,393 @@ require_once 'include/header.php';
                         </p>
                     </div>
                 </div>
-
-                                <div class="card" style="padding: 20px;">
-                    
+            </div>
+            
+            <div class="stats-detail-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 40px;">
+                
+                <div class="card" style="padding: 20px; grid-column: span 2;">
                     <h3 style="border-bottom: 2px solid var(--cor-borda); padding-bottom: 5px; margin-bottom: 15px;">Destaques de Duração ⏱️</h3>
                     
                     <?php if ($stats['faixas']['total_faixas'] > 0): ?>
-                        <h4 style="margin-top: 15px; border-bottom: 1px dashed var(--cor-borda); padding-bottom: 5px; color: var(--cor-texto-principal);">Músicas Extremas</h4>
-                        <p style="margin-bottom: 5px;">
-                            <strong>Mais Longa:</strong> <span style="color: #dc3545;"><?php echo format_seconds($stats['faixas']['faixa_mais_longa']['segundos']); ?></span>
-                            (<?php echo htmlspecialchars($stats['faixas']['faixa_mais_longa']['titulo']); ?> - <?php echo htmlspecialchars($stats['faixas']['faixa_mais_longa']['album']); ?>)
-                        </p>
-                        <p>
-                            <strong>Mais Curta:</strong> 
-                            <?php if ($stats['faixas']['faixa_mais_curta']): ?>
-                                <span style="color: #007bff;"><?php echo format_seconds($stats['faixas']['faixa_mais_curta']['segundos']); ?></span>
-                                (<?php echo htmlspecialchars($stats['faixas']['faixa_mais_curta']['titulo']); ?> - <?php echo htmlspecialchars($stats['faixas']['faixa_mais_curta']['album']); ?>)
-                            <?php else: ?>
-                                N/A (Apenas músicas com duração > 0)
-                            <?php endif; ?>
-                        </p>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                            
+                            <div>
+                                <h4 style="margin-top: 0; border-bottom: 1px dashed var(--cor-borda); padding-bottom: 5px; color: var(--cor-texto-principal);">Músicas Extremas</h4>
+                                <p style="margin-bottom: 5px;">
+                                    <strong>Mais Longa:</strong> <span style="color: #dc3545;"><?php echo format_seconds($stats['faixas']['faixa_mais_longa']['segundos']); ?></span>
+                                    (<?php echo htmlspecialchars($stats['faixas']['faixa_mais_longa']['titulo']); ?> - <?php echo htmlspecialchars($stats['faixas']['faixa_mais_longa']['album']); ?>)
+                                </p>
+                                <p>
+                                    <strong>Mais Curta:</strong> 
+                                    <?php if ($stats['faixas']['faixa_mais_curta']): ?>
+                                        <span style="color: #007bff;"><?php echo format_seconds($stats['faixas']['faixa_mais_curta']['segundos']); ?></span>
+                                        (<?php echo htmlspecialchars($stats['faixas']['faixa_mais_curta']['titulo']); ?> - <?php echo htmlspecialchars($stats['faixas']['faixa_mais_curta']['album']); ?>)
+                                    <?php else: ?>
+                                        N/A (Apenas músicas com duração > 0)
+                                    <?php endif; ?>
+                                </p>
+                            </div>
+                            
+                            <div>
+                                <h4 style="margin-top: 0; border-bottom: 1px dashed var(--cor-borda); padding-bottom: 5px; color: var(--cor-texto-principal);">Álbuns Extremos</h4>
+                                <p style="margin-bottom: 5px;">
+                                    <strong>Álbum Mais Longo:</strong> <span style="color: #dc3545;"><?php echo format_seconds($stats['faixas']['album_mais_longo']['segundos']); ?></span>
+                                    (<?php echo htmlspecialchars($stats['faixas']['album_mais_longo']['titulo']); ?>)
+                                </p>
+                                <p>
+                                    <strong>Álbum Mais Curto:</strong> 
+                                    <?php if ($stats['faixas']['album_mais_curto']): ?>
+                                        <span style="color: #007bff;"><?php echo format_seconds($stats['faixas']['album_mais_curto']['segundos']); ?></span>
+                                        (<?php echo htmlspecialchars($stats['faixas']['album_mais_curto']['titulo']); ?>)
+                                    <?php else: ?>
+                                        N/A (Apenas álbuns com duração > 0)
+                                    <?php endif; ?>
+                                </p>
+                            </div>
 
-                        <h4 style="margin-top: 25px; border-bottom: 1px dashed var(--cor-borda); padding-bottom: 5px; color: var(--cor-texto-principal);">Álbuns Extremos</h4>
-                        <p style="margin-bottom: 5px;">
-                            <strong>Álbum Mais Longo:</strong> <span style="color: #dc3545;"><?php echo format_seconds($stats['faixas']['album_mais_longo']['segundos']); ?></span>
-                            (<?php echo htmlspecialchars($stats['faixas']['album_mais_longo']['titulo']); ?>)
-                        </p>
-                        <p>
-                            <strong>Álbum Mais Curto:</strong> 
-                            <?php if ($stats['faixas']['album_mais_curto']): ?>
-                                <span style="color: #007bff;"><?php echo format_seconds($stats['faixas']['album_mais_curto']['segundos']); ?></span>
-                                (<?php echo htmlspecialchars($stats['faixas']['album_mais_curto']['titulo']); ?>)
-                            <?php else: ?>
-                                N/A (Apenas álbuns com duração > 0)
-                            <?php endif; ?>
-                        </p>
+                        </div>
+                        
                     <?php else: ?>
                         <p style="color: var(--cor-texto-secundario);">Nenhum dado de faixas registrado para calcular durações.</p>
                     <?php endif; ?>
-                    
-                </div>
-            </div>
-            
-            <div class="stats-detail-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; margin-top: 40px;">
-
-                <div class="card" style="padding: 20px;">
-                    <h3 style="border-bottom: 2px solid var(--cor-borda); padding-bottom: 5px; margin-bottom: 15px;">Top 5 Artistas (por Álbum)</h3>
-                    <ol style="padding-left: 20px; color: var(--cor-texto-principal);">
-                        <?php if (empty($stats['top_artistas'])): ?>
-                            <li>Nenhum artista registrado.</li>
-                        <?php else: ?>
-                            <?php foreach ($stats['top_artistas'] as $artista): ?>
-                                <li><?php echo htmlspecialchars($artista['nome']); ?> (<span style="color: var(--cor-destaque);"><?php echo $artista['total']; ?></span> álbuns)</li>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </ol>
-                </div>
-
-                <div class="card" style="padding: 20px;">
-                    <h3 style="border-bottom: 2px solid var(--cor-borda); padding-bottom: 5px; margin-bottom: 15px;">Top 5 Artistas (por Faixa) 🎶</h3>
-                    <ol style="padding-left: 20px; color: var(--cor-texto-principal);">
-                        <?php if (empty($stats['top_artistas_faixas'])): ?>
-                            <li>Nenhum artista com faixas registradas.</li>
-                        <?php else: ?>
-                            <?php foreach ($stats['top_artistas_faixas'] as $artista): ?>
-                                <li><?php echo htmlspecialchars($artista['nome']); ?> (<span style="color: #28a745;"><?php echo $artista['total']; ?></span> faixas)</li>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </ol>
                 </div>
                 
                 <div class="card" style="padding: 20px;">
-                    <h3 style="border-bottom: 2px solid var(--cor-borda); padding-bottom: 5px; margin-bottom: 15px;">Top 5 Gravadoras</h3>
-                    <ol style="padding-left: 20px; color: var(--cor-texto-principal);">
-                        <?php if (empty($stats['top_gravadoras'])): ?>
-                            <li>Nenhuma gravadora registrada.</li>
-                        <?php else: ?>
-                            <?php foreach ($stats['top_gravadoras'] as $gravadora): ?>
-                                <li><?php echo htmlspecialchars($gravadora['nome']); ?> (<span style="color: var(--cor-destaque);"><?php echo $gravadora['total']; ?></span> itens)</li>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </ol>
-                </div>
-            </div>
-
-            <div class="stats-detail-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px; margin-top: 40px;">
-
-                <div class="card" style="padding: 20px;">
                     <h3 style="border-bottom: 2px solid var(--cor-borda); padding-bottom: 5px; margin-bottom: 15px;">Top 5 Gêneros</h3>
-                    <ol style="padding-left: 20px; color: var(--cor-texto-principal);">
-                        <?php if (empty($stats['top_generos'])): ?>
-                            <li>Nenhum gênero registrado.</li>
-                        <?php else: ?>
-                            <?php foreach ($stats['top_generos'] as $genero): ?>
-                                <li><?php echo htmlspecialchars($genero['nome']); ?> (<span style="color: var(--cor-destaque);"><?php echo $genero['total']; ?></span> itens)</li>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </ol>
+                    <?php if (empty($stats['top_generos'])): ?>
+                        <p style="text-align: center; color: var(--cor-texto-secundario);">Nenhum gênero registrado.</p>
+                    <?php else: ?>
+                        <div style="width: 100%; height: 250px;"> 
+                            <canvas id="generoBarChart"></canvas>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
                 <div class="card" style="padding: 20px;">
                     <h3 style="border-bottom: 2px solid var(--cor-borda); padding-bottom: 5px; margin-bottom: 15px;">Top 5 Estilos</h3>
-                    <ol style="padding-left: 20px; color: var(--cor-texto-principal);">
-                        <?php if (empty($stats['top_estilos'])): ?>
-                            <li>Nenhum estilo registrado.</li>
-                        <?php else: ?>
-                            <?php foreach ($stats['top_estilos'] as $estilo): ?>
-                                <li><?php echo htmlspecialchars($estilo['nome']); ?> (<span style="color: var(--cor-destaque);"><?php echo $estilo['total']; ?></span> itens)</li>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </ol>
+                    <?php if (empty($stats['top_estilos'])): ?>
+                        <p style="text-align: center; color: var(--cor-texto-secundario);">Nenhum estilo registrado.</p>
+                    <?php else: ?>
+                        <div style="width: 100%; height: 250px;"> 
+                            <canvas id="estiloBarChart"></canvas>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+            </div>
+
+            <div class="stats-detail-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; margin-top: 40px;">
+
+                <div class="card" style="padding: 20px;">
+                    <h3 style="border-bottom: 2px solid var(--cor-borda); padding-bottom: 5px; margin-bottom: 15px;">Top 5 Artistas (por Álbum)</h3>
+                    <?php if (empty($stats['top_artistas'])): ?>
+                        <p style="text-align: center; color: var(--cor-texto-secundario);">Nenhum artista registrado.</p>
+                    <?php else: ?>
+                        <div style="width: 100%; height: 250px;"> 
+                            <canvas id="artistaBarChart"></canvas>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+                <div class="card" style="padding: 20px;">
+                    <h3 style="border-bottom: 2px solid var(--cor-borda); padding-bottom: 5px; margin-bottom: 15px;">Top 5 Artistas (por Faixa) 🎶</h3>
+                    <?php if (empty($stats['top_artistas_faixas'])): ?>
+                        <p style="text-align: center; color: var(--cor-texto-secundario);">Nenhum artista com faixas registradas.</p>
+                    <?php else: ?>
+                        <div style="width: 100%; height: 250px;"> 
+                            <canvas id="artistaFaixaBarChart"></canvas>
+                        </div>
+                    <?php endif; ?>
+                </div>
+                
+                <div class="card" style="padding: 20px;">
+                    <h3 style="border-bottom: 2px solid var(--cor-borda); padding-bottom: 5px; margin-bottom: 15px;">Top 5 Gravadoras</h3>
+                    <?php if (empty($stats['top_gravadoras'])): ?>
+                        <p style="text-align: center; color: var(--cor-texto-secundario);">Nenhuma gravadora registrada.</p>
+                    <?php else: ?>
+                        <div style="width: 100%; height: 250px;"> 
+                            <canvas id="gravadoraBarChart"></canvas>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
             
         </div>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // --------------------------------------------------------------------------------
+    // GRÁFICO 1: Distribuição por Formato (Pizza)
+    // --------------------------------------------------------------------------------
+    
+    const formatoData = <?php echo json_encode($stats['formatos']); ?>;
+    
+    // Array de Cores
+    const cores = [
+        '#007bff', // Azul
+        '#28a745', // Verde
+        '#dc3545', // Vermelho
+        '#ffc107', // Amarelo
+        '#6f42c1', // Roxo
+        '#17a2b8', // Ciano
+        '#e83e8c', // Rosa
+        '#fd7e14', // Laranja
+    ];
+    
+    const labels = formatoData.map(item => item.formato);
+    const dataValues = formatoData.map(item => item.total);
+    
+    const backgroundColors = labels.map((_, index) => cores[index % cores.length]);
+
+    if (formatoData.length > 0) {
+        const ctx = document.getElementById('formatoPieChart').getContext('2d');
+        
+        const formatoPieChart = new Chart(ctx, {
+            type: 'pie', 
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: dataValues,
+                    backgroundColor: backgroundColors,
+                    hoverOffset: 10 
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom', 
+                        labels: {
+                            // Cor do texto da legenda
+                            color: '#ffffff', 
+                            font: {
+                                size: 14
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                const total = context.parsed;
+                                const totalGeral = dataValues.reduce((a, b) => a + b, 0);
+                                const percentual = ((total / totalGeral) * 100).toFixed(1);
+                                return `${label}${total} itens (${percentual}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+
+    // --------------------------------------------------------------------------------
+    // GRÁFICO 2: Distribuição por Ano (Gráfico de Barras Verticais)
+    // --------------------------------------------------------------------------------
+    const anosData = <?php echo json_encode($stats['anos']); ?>;
+
+    if (anosData.length > 0) {
+        const anosLabels = anosData.map(item => item.ano);
+        const anosValues = anosData.map(item => item.total);
+        
+        const barColor = '#28a745'; // Cor das barras (Verde)
+
+        const ctxAnos = document.getElementById('anosBarChart').getContext('2d');
+        
+        const anosBarChart = new Chart(ctxAnos, {
+            type: 'bar', 
+            data: {
+                labels: anosLabels,
+                datasets: [{
+                    label: 'Itens Lançados',
+                    data: anosValues,
+                    backgroundColor: barColor,
+                    borderColor: barColor,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        // Configuração do eixo X para texto claro
+                        ticks: {
+                            color: 'white',
+                            maxRotation: 45, 
+                            minRotation: 45
+                        },
+                        // Configuração da grade
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)', 
+                        }
+                    },
+                    y: {
+                        // Configuração do eixo Y para texto claro
+                        ticks: {
+                            color: 'white',
+                            beginAtZero: true,
+                            precision: 0 
+                        },
+                         // Configuração da grade
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)', 
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false 
+                    },
+                    title: {
+                        display: false 
+                    },
+                    tooltip: {
+                         callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                return `${label}${context.parsed.y} itens`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // --------------------------------------------------------------------------------
+    // FUNÇÃO AUXILIAR: Cria Gráfico de Barra Horizontal para Rankings (Top 5)
+    // --------------------------------------------------------------------------------
+    function createHorizontalBarChart(elementId, dataArray, labelKey, valueKey, barColor) {
+        if (dataArray.length === 0) return;
+
+        // Invertemos a ordem para que o "top 1" fique no topo do gráfico
+        const chartLabels = dataArray.map(item => item[labelKey]).reverse();
+        const chartValues = dataArray.map(item => item[valueKey]).reverse();
+
+        const ctx = document.getElementById(elementId).getContext('2d');
+        
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: chartLabels,
+                datasets: [{
+                    label: 'Itens',
+                    data: chartValues,
+                    backgroundColor: barColor,
+                    borderColor: barColor,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false, // Permite que o height: 250px funcione
+                indexAxis: 'y', // ESSENCIAL: Transforma em gráfico de barra HORIZONTAL
+                scales: {
+                    x: {
+                        // Eixo X (Valores)
+                        beginAtZero: true,
+                        ticks: {
+                            color: '#fff',
+                            precision: 0,
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)',
+                        }
+                    },
+                    y: {
+                        // Eixo Y (Rótulos/Nomes)
+                        ticks: {
+                            color: '#fff',
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.05)',
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false 
+                    },
+                    title: {
+                        display: false 
+                    },
+                    tooltip: {
+                         callbacks: {
+                            label: function(context) {
+                                // Define a unidade baseado no ID do elemento (apenas para Artista por Faixa)
+                                const unit = (elementId === 'artistaFaixaBarChart') ? ' faixas' : ' itens';
+                                return `${context.parsed.x}${unit}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // --------------------------------------------------------------------------------
+    // GRÁÁFICOS 3 a 7: Top Rankings (Barras Horizontais)
+    // --------------------------------------------------------------------------------
+
+    // Artistas (por Álbum) - Cor Azul
+    createHorizontalBarChart(
+        'artistaBarChart', 
+        <?php echo json_encode($stats['top_artistas']); ?>, 
+        'nome', 
+        'total', 
+        '#007bff'
+    );
+    
+    // Gêneros - Cor Verde
+    createHorizontalBarChart(
+        'generoBarChart', 
+        <?php echo json_encode($stats['top_generos']); ?>, 
+        'nome', 
+        'total', 
+        '#28a745' 
+    );
+
+    // Gravadoras - Cor Roxa
+    createHorizontalBarChart(
+        'gravadoraBarChart', 
+        <?php echo json_encode($stats['top_gravadoras']); ?>, 
+        'nome', 
+        'total', 
+        '#6f42c1'
+    );
+    
+    // Artistas (por Faixa) - Cor Vermelha
+    createHorizontalBarChart(
+        'artistaFaixaBarChart', 
+        <?php echo json_encode($stats['top_artistas_faixas']); ?>, 
+        'nome', 
+        'total', 
+        '#dc3545'
+    );
+
+    // Estilos - Cor Ciano
+    createHorizontalBarChart(
+        'estiloBarChart', 
+        <?php echo json_encode($stats['top_estilos']); ?>, 
+        'nome', 
+        'total', 
+        '#17a2b8'
+    );
+    
+}); // Fim do DOMContentLoaded
+</script>
 
 <?php require_once 'include/footer.php'; ?>

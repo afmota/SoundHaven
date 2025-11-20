@@ -16,25 +16,55 @@ $offset = ($pagina_atual - 1) * $limite_por_pagina;
 // view_status: 1 (Ativos - padrão), 0 (Lixeira/Excluídos)
 $view_status = filter_input(INPUT_GET, 'view_status', FILTER_VALIDATE_INT) ?? 1;
 
+// ----------------------------------------------------
+// 2. LÓGICA DE FILTRAGEM DE FORMATO (NOVA)
+// ----------------------------------------------------
+$filtro_formato = null;
+$filtro_titulo_extra = "";
+
+if (isset($_GET['formato']) && !empty($_GET['formato'])) {
+    // Sanitiza e define o filtro de formato (ex: 'LP' ou 'CD')
+    $filtro_formato = trim($_GET['formato']);
+    $filtro_titulo_extra = " (Formato: " . htmlspecialchars($filtro_formato) . ")";
+}
+// ----------------------------------------------------
+
+// Definição da cláusula WHERE base (Ativo/Lixeira)
 $where_ativo = "";
 if ($view_status == 1) {
-    $where_ativo = "WHERE c.ativo = 1";
+    $where_ativo = "c.ativo = 1";
 } elseif ($view_status == 0) {
-    $where_ativo = "WHERE c.ativo = 0";
+    $where_ativo = "c.ativo = 0";
 }
+
 // Variável para a barra de título
 $page_title = ($view_status == 0) ? 'Lixeira da Coleção' : 'Sua Coleção Pessoal';
+$page_title .= $filtro_titulo_extra; // Adiciona o filtro ao título
 
 
 // ----------------------------------------------------
-// 2. BUSCA DO TOTAL DE ITENS (Para a Paginação)
+// 3. BUSCA DO TOTAL DE ITENS (Para a Paginação)
 // ----------------------------------------------------
+// A contagem deve considerar o filtro de status E o filtro de formato
 
 $total_itens = 0;
 try {
-    // Conta o total de itens (respeitando o filtro de ativo/lixeira)
-    $sql_count = "SELECT COUNT(id) FROM colecao AS c $where_ativo";
-    $total_itens = $pdo->query($sql_count)->fetchColumn();
+    // Cláusula WHERE CONDICIONAL para a contagem
+    $sql_count_where = "WHERE $where_ativo";
+    if ($filtro_formato) {
+        // Precisamos do JOIN para filtrar por f.descricao
+        $sql_count = "SELECT COUNT(c.id) FROM colecao AS c 
+                      LEFT JOIN formatos AS f ON c.formato_id = f.id
+                      $sql_count_where AND f.descricao = :formato";
+        $stmt_count = $pdo->prepare($sql_count);
+        $stmt_count->bindParam(':formato', $filtro_formato, PDO::PARAM_STR);
+        $stmt_count->execute();
+        $total_itens = $stmt_count->fetchColumn();
+    } else {
+        // Contagem sem filtro de formato
+        $sql_count = "SELECT COUNT(id) FROM colecao AS c $sql_count_where";
+        $total_itens = $pdo->query($sql_count)->fetchColumn();
+    }
 } catch (\PDOException $e) {
     // Apenas ignora ou loga o erro de contagem, se necessário
 }
@@ -43,7 +73,7 @@ $total_paginas = ceil($total_itens / $limite_por_pagina);
 
 
 // ----------------------------------------------------
-// 3. CARREGAR DADOS BÁSICOS DA COLEÇÃO COM PAGINAÇÃO
+// 4. CARREGAR DADOS BÁSICOS DA COLEÇÃO COM PAGINAÇÃO E FILTRO DE FORMATO
 // ----------------------------------------------------
 
 $colecao = [];
@@ -67,15 +97,28 @@ try {
             ) AS artista_principal
         FROM colecao AS c
         LEFT JOIN formatos AS f ON c.formato_id = f.id
-        $where_ativo 
-        ORDER BY c.data_aquisicao DESC, c.titulo ASC
-        LIMIT :limite OFFSET :offset"; // <-- CLÁUSULAS DE PAGINAÇÃO
+        WHERE $where_ativo 
+    ";
+    
+    // Adiciona o filtro de formato à query principal
+    if ($filtro_formato) {
+        $sql_colecao .= " AND f.descricao = :formato ";
+    }
+    
+    // Adiciona paginação e ordenação
+    $sql_colecao .= " ORDER BY c.data_aquisicao DESC, c.titulo ASC
+        LIMIT :limite OFFSET :offset"; 
 
     $stmt_colecao = $pdo->prepare($sql_colecao);
     $stmt_colecao->bindParam(':limite', $limite_por_pagina, PDO::PARAM_INT);
     $stmt_colecao->bindParam(':offset', $offset, PDO::PARAM_INT);
-    $stmt_colecao->execute();
     
+    // Bind do parâmetro de formato, se ativo
+    if ($filtro_formato) {
+        $stmt_colecao->bindParam(':formato', $filtro_formato, PDO::PARAM_STR);
+    }
+    
+    $stmt_colecao->execute();
     $colecao = $stmt_colecao->fetchAll(PDO::FETCH_ASSOC);
 
 } catch (\PDOException $e) {
@@ -83,20 +126,24 @@ try {
 }
 
 // ----------------------------------------------------
-// 4. HTML DA PÁGINA
+// 5. HTML DA PÁGINA
 // ----------------------------------------------------
 require_once "../include/header.php";
 
 /**
- * Função auxiliar para gerar o link da paginação, mantendo o view_status
+ * Função auxiliar para gerar o link da paginação, mantendo o view_status E o formato
  * @param int $pagina
  * @param int $view_status
+ * @param string|null $formato
  * @return string
  */
-function getPaginationLink($pagina, $view_status) {
+function getPaginationLink($pagina, $view_status, $formato = null) {
     $url = "colecao.php?p=$pagina";
-    if ($view_status !== 1) { // Só adiciona view_status se for diferente do padrão (1)
+    if ($view_status !== 1) { 
         $url .= "&view_status=$view_status";
+    }
+    if ($formato) { // Adiciona o formato ao link de paginação
+        $url .= "&formato=" . urlencode($formato);
     }
     return $url;
 }
@@ -110,10 +157,11 @@ function getPaginationLink($pagina, $view_status) {
 <div class="page-header-actions">
     <h1><?php echo $page_title; ?> (Total: <?php echo $total_itens; ?> itens)</h1>
     <div class="view-switcher">
-        <a href="colecao.php?view_status=1" class="btn-action <?php echo ($view_status == 1) ? 'primary-action' : 'secondary-action'; ?>">
+        <!-- O link de view_status deve limpar o filtro de formato, ou mantê-lo se desejar -->
+        <a href="colecao.php?view_status=1<?php echo $filtro_formato ? "&formato=" . urlencode($filtro_formato) : ''; ?>" class="btn-action <?php echo ($view_status == 1) ? 'primary-action' : 'secondary-action'; ?>">
             <i class="fas fa-box"></i> Itens Ativos
         </a>
-        <a href="colecao.php?view_status=0" class="btn-action btn-lixeira-toggle <?php echo ($view_status == 0) ? 'primary-action' : 'secondary-action'; ?>">
+        <a href="colecao.php?view_status=0<?php echo $filtro_formato ? "&formato=" . urlencode($filtro_formato) : ''; ?>" class="btn-action btn-lixeira-toggle <?php echo ($view_status == 0) ? 'primary-action' : 'secondary-action'; ?>">
             <i class="fas fa-trash"></i> Lixeira
         </a>
     </div>
@@ -133,7 +181,7 @@ function getPaginationLink($pagina, $view_status) {
                 <span style="color: var(--cor-texto-secundario);">Página <?php echo $pagina_atual; ?> de <?php echo $total_paginas; ?></span>
                 
                 <?php if ($pagina_atual > 1): ?>
-                    <a href="<?php echo getPaginationLink($pagina_atual - 1, $view_status); ?>" class="btn-action secondary-action">
+                    <a href="<?php echo getPaginationLink($pagina_atual - 1, $view_status, $filtro_formato); ?>" class="btn-action secondary-action">
                         <i class="fas fa-chevron-left"></i> Anterior
                     </a>
                 <?php else: ?>
@@ -143,7 +191,7 @@ function getPaginationLink($pagina, $view_status) {
                 <?php endif; ?>
 
                 <?php if ($pagina_atual < $total_paginas): ?>
-                    <a href="<?php echo getPaginationLink($pagina_atual + 1, $view_status); ?>" class="btn-action secondary-action">
+                    <a href="<?php echo getPaginationLink($pagina_atual + 1, $view_status, $filtro_formato); ?>" class="btn-action secondary-action">
                         Próxima <i class="fas fa-chevron-right"></i>
                     </a>
                 <?php else: ?>
@@ -163,6 +211,9 @@ function getPaginationLink($pagina, $view_status) {
                                     ? "A Lixeira está vazia. Nenhum item foi excluído logicamente." 
                                     : "Sua coleção está vazia ou não há itens na página atual. Adicione itens a partir do Catálogo!"; 
                             ?>
+                            <?php if ($filtro_formato): ?>
+                                <br>Não foram encontrados itens no formato "<?php echo htmlspecialchars($filtro_formato); ?>".
+                            <?php endif; ?>
                         </p>
                     </div>
                 <?php else: ?>
@@ -220,7 +271,7 @@ function getPaginationLink($pagina, $view_status) {
                     <span style="color: var(--cor-texto-secundario);">Página <?php echo $pagina_atual; ?> de <?php echo $total_paginas; ?></span>
                     
                     <?php if ($pagina_atual > 1): ?>
-                        <a href="<?php echo getPaginationLink($pagina_atual - 1, $view_status); ?>" class="btn-action secondary-action">
+                        <a href="<?php echo getPaginationLink($pagina_atual - 1, $view_status, $filtro_formato); ?>" class="btn-action secondary-action">
                             <i class="fas fa-chevron-left"></i> Anterior
                         </a>
                     <?php else: ?>
@@ -230,7 +281,7 @@ function getPaginationLink($pagina, $view_status) {
                     <?php endif; ?>
 
                     <?php if ($pagina_atual < $total_paginas): ?>
-                        <a href="<?php echo getPaginationLink($pagina_atual + 1, $view_status); ?>" class="btn-action secondary-action">
+                        <a href="<?php echo getPaginationLink($pagina_atual + 1, $view_status, $filtro_formato); ?>" class="btn-action secondary-action">
                             Próxima <i class="fas fa-chevron-right"></i>
                         </a>
                     <?php else: ?>

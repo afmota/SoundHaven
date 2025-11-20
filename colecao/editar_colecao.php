@@ -85,12 +85,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $colecao_id) {
 
         // 1. UPDATE na tabela principal: 'colecao'
         $sql_colecao = "UPDATE colecao SET 
-                        titulo = :titulo, data_lancamento = :data_lancamento, capa_url = :capa_url, 
-                        data_aquisicao = :data_aquisicao, numero_catalogo = :numero_catalogo, 
-                        preco = :preco, condicao = :condicao, observacoes = :observacoes, 
-                        gravadora_id = :gravadora_id, formato_id = :formato_id
-                        WHERE id = :id";
-                         
+                            titulo = :titulo, data_lancamento = :data_lancamento, capa_url = :capa_url, 
+                            data_aquisicao = :data_aquisicao, numero_catalogo = :numero_catalogo, 
+                            preco = :preco, condicao = :condicao, observacoes = :observacoes, 
+                            gravadora_id = :gravadora_id, formato_id = :formato_id
+                            WHERE id = :id";
+                            
         $stmt_colecao = $pdo->prepare($sql_colecao);
         $stmt_colecao->execute([
             ':titulo' => $titulo, 
@@ -211,6 +211,40 @@ require_once '../include/header.php';
 .form-row-2-col > div > label {
     margin-bottom: 5px;
 }
+
+/* ---------------------------------------------------------------------- */
+/* CSS NECESSÁRIO PARA LÓGICA DE ADIÇÃO RÁPIDA (VISUAL) */
+/* ---------------------------------------------------------------------- */
+
+.form-group-with-add .add-new-controls {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    margin-top: 5px; 
+}
+
+/* O input e o ícone de 'check' (✓) de salvar devem ser ocultados por padrão */
+.form-group-with-add .add-new-controls .small-input,
+.form-group-with-add .add-new-controls .save-icon {
+    display: none;
+}
+
+/* Quando o modo de adição estiver ativo, inverter: */
+.form-group-with-add.adding-mode .add-new-controls .small-input {
+    display: block; /* Mostra o campo de texto */
+    flex-grow: 1;
+}
+
+/* Oculta o ícone de '+' (adição) no modo de adição */
+.form-group-with-add.adding-mode .add-new-controls .add-icon {
+    display: none; 
+}
+
+/* Mostra o ícone de '✓' (salvar) no modo de adição */
+.form-group-with-add.adding-mode .add-new-controls .save-icon {
+    display: inline-block; 
+}
+
 </style>
 
 <div class="container" style="padding-top: 100px;">
@@ -358,7 +392,7 @@ require_once '../include/header.php';
                                     <div>
                                         <label for="data_aquisicao">Data de Aquisição:*</label>
                                         <input type="date" id="data_aquisicao" name="data_aquisicao" required 
-                                                value="<?php echo htmlspecialchars($item['data_aquisicao'] ?? date('Y-m-d')); ?>">
+                                                        value="<?php echo htmlspecialchars($item['data_aquisicao'] ?? date('Y-m-d')); ?>">
                                     </div>
                                     <div>
                                         <label for="formato_id">Formato:*</label>
@@ -412,33 +446,53 @@ require_once '../include/header.php';
 <script> 
     // -------------------------------------------------------------------------------------
     // Inicialização do Formulário: Carregar Listeners (Lógica de Adição Rápida)
+    // CORREÇÃO: Implementa a alternância do "modo de adição"
     // -------------------------------------------------------------------------------------
     document.addEventListener('DOMContentLoaded', () => { 
         
-        // Lógica de Adição Rápida (Mantida, pois estava funcionando)
         const buttons = document.querySelectorAll('.btn-add-entity'); 
         const endpoint = 'add_entity_ajax.php'; 
 
         buttons.forEach(button => { 
+            // 1. Lógica para alternar o MODO DE ADIÇÃO (Adicionar/Salvar)
             button.addEventListener('click', (e) => {
+                e.preventDefault(); 
+                
                 const btn = e.currentTarget;
                 const container = btn.closest('.form-group-with-add');
-                const targetId = btn.getAttribute('data-target-id');
-                const table = btn.getAttribute('data-table');
                 const inputId = btn.getAttribute('data-input-id');
                 const input = document.getElementById(inputId);
                 const value = input.value.trim();
-                const select = document.getElementById(targetId);
-                const isMultiple = select.hasAttribute('multiple');
-                const originalContent = btn.innerHTML;
+
+                // -----------------------------------------------------------
+                // CORREÇÃO: Se NÃO ESTIVER no modo de adição, ative o modo.
+                // -----------------------------------------------------------
+                if (!container.classList.contains('adding-mode')) {
+                    // MODO: ATIVAR ADIÇÃO (Revelar input)
+                    container.classList.add('adding-mode');
+                    input.focus(); // Coloca o foco no campo de texto
+                    return; // Sai da função, aguardando o usuário preencher o nome
+                }
+                
+                // -----------------------------------------------------------
+                // Continuação (Se JÁ ESTIVER no modo de adição, Tenta Salvar)
+                // -----------------------------------------------------------
 
                 if (!value) {
+                    // O campo está ativo, mas vazio.
                     alert('Por favor, insira um nome.');
-                    return;
+                    return; 
                 }
+                
+                // -- Lógica de Salvar a Entidade (AJAX) --
+                
+                const targetId = btn.getAttribute('data-target-id');
+                const table = btn.getAttribute('data-table');
+                const select = document.getElementById(targetId);
+                const isMultiple = select.hasAttribute('multiple');
+                const originalContent = btn.innerHTML; 
 
-                // MODO: ATIVAR ADIÇÃO (Desativar e mostrar loader)
-                container.classList.add('adding-mode');
+                // Feedback visual de carregamento
                 btn.disabled = true;
                 input.disabled = true;
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; 
@@ -454,25 +508,20 @@ require_once '../include/header.php';
                 })
                 .then(({ status, body }) => {
                     if (status === 201) {
-                        // 1. Cria nova opção
+                        // Sucesso: 
                         const newOption = document.createElement('option');
                         newOption.value = body.id;
-                        // O valor retornado pelo PHP (body.value) deve ser o nome já decodificado/limpo.
                         newOption.textContent = body.value; 
                         
-                        // 2. Adiciona ao select
                         select.appendChild(newOption);
                         
-                        // 3. Seleciona a nova opção
+                        // Seleciona a nova opção
                         if (isMultiple) {
-                            // Para multi-select (Artistas, Produtores, Gêneros, Estilos)
                             newOption.selected = true; 
                         } else {
-                            // Para single-select (Gravadora)
                             select.value = body.id; 
                         }
                         
-                        // 4. Feedback e Limpeza
                         alert(`Sucesso! "${body.value}" adicionado.`);
                         input.value = '';
 
