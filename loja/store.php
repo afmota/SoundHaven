@@ -14,7 +14,7 @@ require_once '../db/conexao.php';
 require_once '../funcoes.php'; 
 
 // --- CONFIGURAÇÃO DE PAGINAÇÃO E FILTROS ---
-$limite_por_pagina = 20; 
+$limite_por_pagina = 25; 
 $pagina_atual = isset($_GET['p']) ? (int)$_GET['p'] : 1; 
 
 // Pega e sanitiza os filtros da URL

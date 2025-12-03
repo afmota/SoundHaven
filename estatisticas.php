@@ -56,7 +56,7 @@ try {
     $stats['formatos'] = $stmt_formatos->fetchAll(PDO::FETCH_ASSOC);
 
     // ----------------------------------------------------
-    // 3. TOP 5 ARTISTAS (POR ÁLBUM)
+    // 3. TOP 10 ARTISTAS (POR ÁLBUM)
     // ----------------------------------------------------
     $sql_artistas = "
         SELECT 
@@ -68,13 +68,13 @@ try {
         WHERE c.ativo = 1
         GROUP BY a.nome
         ORDER BY total DESC
-        LIMIT 5";
+        LIMIT 10";
         
     $stmt_artistas = $pdo->query($sql_artistas);
     $stats['top_artistas'] = $stmt_artistas->fetchAll(PDO::FETCH_ASSOC);
 
     // ----------------------------------------------------
-    // 4. TOP 5 ARTISTAS (POR FAIXA)
+    // 4. TOP 10 ARTISTAS (POR FAIXA)
     // ----------------------------------------------------
     $sql_artistas_faixas = "
         SELECT 
@@ -87,7 +87,7 @@ try {
         WHERE c.ativo = 1
         GROUP BY a.nome
         ORDER BY total DESC
-        LIMIT 5";
+        LIMIT 10";
             
     $stmt_artistas_faixas = $pdo->query($sql_artistas_faixas);
     $stats['top_artistas_faixas'] = $stmt_artistas_faixas->fetchAll(PDO::FETCH_ASSOC);
@@ -458,7 +458,7 @@ require_once 'include/header.php';
             <div class="stats-detail-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; margin-top: 40px;">
 
                 <div class="card" style="padding: 20px;">
-                    <h3 style="border-bottom: 2px solid var(--cor-borda); padding-bottom: 5px; margin-bottom: 15px;">Top 5 Artistas (por Álbum)</h3>
+                    <h3 style="border-bottom: 2px solid var(--cor-borda); padding-bottom: 5px; margin-bottom: 15px;">Top 10 Artistas (por Álbum)</h3>
                     <?php if (empty($stats['top_artistas'])): ?>
                         <p style="text-align: center; color: var(--cor-texto-secundario);">Nenhum artista registrado.</p>
                     <?php else: ?>
@@ -469,7 +469,7 @@ require_once 'include/header.php';
                 </div>
 
                 <div class="card" style="padding: 20px;">
-                    <h3 style="border-bottom: 2px solid var(--cor-borda); padding-bottom: 5px; margin-bottom: 15px;">Top 5 Artistas (por Faixa) 🎶</h3>
+                    <h3 style="border-bottom: 2px solid var(--cor-borda); padding-bottom: 5px; margin-bottom: 15px;">Top 10 Artistas (por Faixa) 🎶</h3>
                     <?php if (empty($stats['top_artistas_faixas'])): ?>
                         <p style="text-align: center; color: var(--cor-texto-secundario);">Nenhum artista com faixas registradas.</p>
                     <?php else: ?>
