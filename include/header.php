@@ -31,7 +31,6 @@ if (!$logado && $pagina_atual != 'index.php' && $pagina_atual != 'login.php') {
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="../css/estilos.css">
-    <link rel="stylesheet" href="../css/colecao.css">
     <link rel="stylesheet" href="../css/loja.css">
 </head>
 <body>
@@ -62,6 +61,7 @@ if (!$logado && $pagina_atual != 'index.php' && $pagina_atual != 'login.php') {
                         <ul>
                             <li><a href="/dashboard.php"><i class="fas fa-home"></i> Dashboard</a></li>
                             <li><a href="/colecao/colecao.php"><i class="fas fa-list-alt"></i> Minha Coleção</a></li>
+                            <li><a href="/artistas/artistas.php"><i class="fa-solid fa-microphone-lines"></i> Artistas</a></li>
                             <li><a href="/estatisticas.php"><i class="fas fa-chart-line"></i> Estatísticas</a></li>
                             <li><a href="/loja/store.php"><i class="fas fa-store"></i> Loja</a></li>
                             <?php if ($isAdmin): ?>
