@@ -3,8 +3,10 @@
 // Listagem dos Artistas (tabela 'artistas'). Com visualização em Modal.
 // Baseado em colecao.php.
 
+// Inclusões de arquivos de apoio
 require_once "../db/conexao.php";
 require_once "../funcoes.php";
+require_once "../include/header.php"; // Incluído aqui para começar o HTML
 
 // ----------------------------------------------------
 // 1. CONFIGURAÇÃO DE PAGINAÇÃO E FILTRO DE STATUS
@@ -18,10 +20,10 @@ $offset = ($pagina_atual - 1) * $limite_por_pagina;
 $view_status = filter_input(INPUT_GET, 'view_status', FILTER_VALIDATE_INT) ?? 1;
 
 // ----------------------------------------------------
-// 2. LÓGICA DE FILTRAGEM (Não aplicada para Artistas neste momento, mas mantemos o padrão)
+// 2. LÓGICA DE FILTRAGEM
 // ----------------------------------------------------
 $filtro_titulo_extra = ""; 
-// Removida a lógica de filtro de formato, pois não é aplicável a artistas.
+// Removida a lógica de filtro de formato/outros filtros não aplicáveis a artistas.
 // ----------------------------------------------------
 
 // Definição da cláusula WHERE base (Ativo/Lixeira)
@@ -34,22 +36,26 @@ if ($view_status == 1) {
 
 // Variável para a barra de título
 $page_title = ($view_status == 0) ? 'Lixeira de Artistas' : 'Artistas Cadastrados';
-$page_title .= $filtro_titulo_extra; // Mantido por consistência de código
+$page_title .= $filtro_titulo_extra; 
 
 
 // ----------------------------------------------------
 // 3. BUSCA DO TOTAL DE ITENS (Para a Paginação)
 // ----------------------------------------------------
-// Adaptação: Contagem simples na tabela 'artistas'.
 
 $total_itens = 0;
 try {
     $sql_count_where = "WHERE $where_ativo";
-    // SQL simplificado, pois não há filtro de formato para a contagem de artistas
-    $sql_count = "SELECT COUNT(id) FROM artistas AS a $sql_count_where";
+    $sql_count = "
+        SELECT COUNT(DISTINCT a.id)
+        FROM artistas AS a
+        INNER JOIN colecao_artista AS ca ON a.id = ca.artista_id 
+        LEFT JOIN paises AS p ON a.pais_origem = p.id
+        $sql_count_where
+    ";
     $total_itens = $pdo->query($sql_count)->fetchColumn();
 } catch (\PDOException $e) {
-    // Ignora ou loga o erro
+    // Tratamento de erro
 }
 
 $total_paginas = ceil($total_itens / $limite_por_pagina);
@@ -72,7 +78,9 @@ try {
             p.nome AS nome_pais
         FROM artistas AS a
         LEFT JOIN paises AS p ON a.pais_origem = p.id
-        WHERE $where_ativo 
+        INNER JOIN colecao_artista AS ca ON a.id = ca.artista_id
+        WHERE $where_ativo
+        GROUP BY a.id
     ";
     
     // Adiciona paginação e ordenação
@@ -90,14 +98,8 @@ try {
     die("Erro ao carregar artistas: " . $e->getMessage());
 }
 
-// ----------------------------------------------------
-// 5. HTML DA PÁGINA (ADAPTAÇÃO)
-// ----------------------------------------------------
-require_once "../include/header.php";
-
 /**
  * Função auxiliar para gerar o link da paginação, mantendo o view_status
- * Adaptação da função colecao.php (remove $formato)
  * @param int $pagina
  * @param int $view_status
  * @return string
@@ -109,24 +111,27 @@ function getPaginationLink($pagina, $view_status) {
     }
     return $url;
 }
-
 ?>
 
 <div class="container">
     <div class="main-layout">
         <div class="content-area">
 
-<div class="page-header-actions">
-    <h1><?php echo $page_title; ?> (Total: <?php echo $total_itens; ?> artistas)</h1>
-    <div class="view-switcher">
-        <a href="artistas.php?view_status=1" class="btn-action <?php echo ($view_status == 1) ? 'primary-action' : 'secondary-action'; ?>">
-            <i class="fas fa-user-check"></i> Artistas Ativos
-        </a>
-        <a href="artistas.php?view_status=0" class="btn-action btn-lixeira-toggle <?php echo ($view_status == 0) ? 'primary-action' : 'secondary-action'; ?>">
-            <i class="fas fa-trash"></i> Lixeira
-        </a>
-    </div>
-</div>            
+            <div class="page-header-actions">
+                <h1><?php echo $page_title; ?> (Total: <?php echo $total_itens; ?> artistas)</h1>
+                <div class="view-switcher">
+                    <a href="artistas.php?view_status=1" class="btn-action <?php echo ($view_status == 1) ? 'primary-action' : 'secondary-action'; ?>">
+                        <i class="fas fa-user-check"></i> Artistas Ativos
+                    </a>
+                    <a href="artistas.php?view_status=0" class="btn-action btn-lixeira-toggle <?php echo ($view_status == 0) ? 'primary-action' : 'secondary-action'; ?>">
+                        <i class="fas fa-trash"></i> Lixeira
+                    </a>
+                    <a href="adicionar_artista.php" class="btn-action primary-action">
+                        <i class="fas fa-plus"></i> Adicionar Artista
+                    </a>
+                </div>
+            </div>
+            
             <?php 
                 // Exibição da mensagem de status (sucesso/erro)
                 if (isset($_GET['status']) && !empty($_GET['msg'])) {
@@ -138,29 +143,29 @@ function getPaginationLink($pagina, $view_status) {
             <p style="margin-bottom: 20px; color: var(--cor-texto-secundario);">Clique na foto do artista para ver todos os detalhes e opções de edição.</p>
             
             <?php if ($total_paginas > 1): ?>
-            <div class="pagination-controls" style="display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-bottom: 20px;">
-                <span style="color: var(--cor-texto-secundario);">Página <?php echo $pagina_atual; ?> de <?php echo $total_paginas; ?></span>
-                
-                <?php if ($pagina_atual > 1): ?>
-                    <a href="<?php echo getPaginationLink($pagina_atual - 1, $view_status); ?>" class="btn-action secondary-action">
-                        <i class="fas fa-chevron-left"></i> Anterior
-                    </a>
-                <?php else: ?>
-                    <span class="btn-action secondary-action disabled" style="opacity: 0.5; cursor: not-allowed;">
-                        <i class="fas fa-chevron-left"></i> Anterior
-                    </span>
-                <?php endif; ?>
+                <div class="pagination-controls" style="display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-bottom: 20px;">
+                    <span style="color: var(--cor-texto-secundario);">Página <?php echo $pagina_atual; ?> de <?php echo $total_paginas; ?></span>
+                    
+                    <?php if ($pagina_atual > 1): ?>
+                        <a href="<?php echo getPaginationLink($pagina_atual - 1, $view_status); ?>" class="btn-action secondary-action">
+                            <i class="fas fa-chevron-left"></i> Anterior
+                        </a>
+                    <?php else: ?>
+                        <span class="btn-action secondary-action disabled" style="opacity: 0.5; cursor: not-allowed;">
+                            <i class="fas fa-chevron-left"></i> Anterior
+                        </span>
+                    <?php endif; ?>
 
-                <?php if ($pagina_atual < $total_paginas): ?>
-                    <a href="<?php echo getPaginationLink($pagina_atual + 1, $view_status); ?>" class="btn-action secondary-action">
-                        Próxima <i class="fas fa-chevron-right"></i>
-                    </a>
-                <?php else: ?>
-                    <span class="btn-action secondary-action disabled" style="opacity: 0.5; cursor: not-allowed;">
-                        Próxima <i class="fas fa-chevron-right"></i>
-                    </span>
-                <?php endif; ?>
-            </div>
+                    <?php if ($pagina_atual < $total_paginas): ?>
+                        <a href="<?php echo getPaginationLink($pagina_atual + 1, $view_status); ?>" class="btn-action secondary-action">
+                            Próxima <i class="fas fa-chevron-right"></i>
+                        </a>
+                    <?php else: ?>
+                        <span class="btn-action secondary-action disabled" style="opacity: 0.5; cursor: not-allowed;">
+                            Próxima <i class="fas fa-chevron-right"></i>
+                        </span>
+                    <?php endif; ?>
+                </div>
             <?php endif; ?>
             
             <div class="colecao-card-grid">
@@ -245,4 +250,19 @@ function getPaginationLink($pagina, $view_status) {
     </div>
 </div>
 
-<?php require_once "../include/footer.php"; ?>
+<div id="artistaModal" class="modal-padrao">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        
+        <div id="modal-loader-artista" class="modal-loader" style="text-align: center; padding: 50px;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 3em; color: var(--cor-destaque);"></i>
+            <p style="margin-top: 20px; color: var(--cor-texto-secundario);">Carregando detalhes do artista...</p>
+        </div>
+
+        <div id="modal-details-artista" style="display: none;">
+            </div>
+
+    </div>
+</div>
+
+<?php require_once "../include/footer.php"; // Fecha o HTML ?>

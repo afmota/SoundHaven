@@ -1072,6 +1072,24 @@ footer {
 /* ========================================== */
 /* MODAL DE DETALHES DA COLEÇÃO */
 /* ========================================== */
+.modal-padrao {
+    display: none; /* Inicia oculto */
+    
+    /* PROPRIEDADES CRÍTICAS DE POSICIONAMENTO */
+    position: fixed; /* Isso faz com que ele fique fixo na tela */
+    z-index: 1000;  /* Garante que ele fique acima de tudo */
+    left: 0;        /* Inicia no canto superior esquerdo */
+    top: 0;
+    
+    width: 100%;    /* Cobre toda a largura */
+    height: 100%;   /* Cobre toda a altura */
+    
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.9);
+    justify-content: center; 
+    align-items: center; 
+}
+
 .modal-overlay {
     position: fixed;
     top: 0;

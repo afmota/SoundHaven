@@ -6,7 +6,7 @@ $(document).ready(function() {
     // VARIÁVEL GLOBAL PARA ARMAZENAR DADOS DE IMPORTAÇÃO (IMPORTANTE!)
     let importData = {}; 
     
-    // Configurações e URLs
+    // Configurações e URLs da COLEÇÃO
     const editUrlBase = 'editar_colecao.php?id=';
     const deleteUrlBase = 'excluir_colecao.php?id=';
     const restoreUrlBase = 'restaurar_colecao.php?id='; 
@@ -18,10 +18,10 @@ $(document).ready(function() {
     const $loaderDiv = $('#modal-loader');
     
     // =========================================================================
-    // FUNÇÕES GERAIS DO MODAL
+    // FUNÇÕES GERAIS DO MODAL DA COLEÇÃO (EXISTENTE)
     // =========================================================================
 
-    // Função para fechar o modal
+    // Função para fechar o modal da Coleção
     function closeModal() {
         $modal.css('display', 'none');
         $detailsDiv.hide();
@@ -59,7 +59,7 @@ $(document).ready(function() {
     });
     
     // =========================================================================
-    // FUNÇÕES DE EDIÇÃO MANUAL DE FAIXAS (NOVA FUNCIONALIDADE)
+    // FUNÇÕES DE EDIÇÃO MANUAL DE FAIXAS (SUA LÓGICA ORIGINAL)
     // =========================================================================
 
     // ----------------------------------------------------------------
@@ -163,11 +163,16 @@ $(document).ready(function() {
 
 
     // =========================================================================
-    // 1. ABERTURA DO MODAL (EVENTO DELEGADO)
+    // 1. ABERTURA DO MODAL DA COLEÇÃO (EVENTO DELEGADO)
     // =========================================================================
     $(document).on('click', '.colecao-item-card.open-modal', async function(e) {
         
         closeModal(); // Limpa e fecha o anterior
+        
+        // NOVO: Segurança para fechar o modal de Artista se estiver aberto
+        if ($('#artistaModal').css('display') === 'flex') {
+             closeModalArtista(); // Chamada à nova função de fechamento de artista
+        }
         
         const $card = $(this);
         const albumId = $card.data('album-id');
@@ -557,5 +562,113 @@ $(document).ready(function() {
             }
         });
     }
+
+    // =========================================================================
+    // INÍCIO DA ADIÇÃO PARA ARTISTAS (CORRIGIDA E ROBUSTA)
+    // =========================================================================
+    
+    // Configurações e URLs para Artistas
+    const editUrlBaseArtista = 'editar_artista.php?id=';
+    const deleteUrlBaseArtista = 'excluir_artista.php?id=';
+    const restoreUrlBaseArtista = 'restaurar_artista.php?id='; 
+    const fetchUrlBaseArtista = 'fetch_artista_details.php?id='; 
+
+    // Seletores de Artista (Para evitar problemas de escopo/definição antecipada)
+    const $detailsDivArtista = $('#modal-details-artista'); 
+    const $loaderDivArtista = $('#modal-loader-artista'); 
+
+    // Função para fechar o modal do artista
+    function closeModalArtista() {
+        $('#artistaModal').css('display', 'none'); // CORREÇÃO: Busca direta pelo ID
+        $detailsDivArtista.hide();
+        $loaderDivArtista.show();
+        $('#artistaModal').find('.modal-content').removeClass('loaded');
+        
+        // Limpar áreas dinâmicas específicas do artista
+        $('#modal-relacionamentos-artista').empty(); 
+        $('#modal-actions-artista').empty(); 
+    }
+
+    // Fechar ao clicar no 'x' do artista e fora do modal
+    $('#artistaModal').find('.close-modal').on('click', closeModalArtista);
+    $('#artistaModal').on('click', (e) => {
+        // CORREÇÃO: Busca direta pelo ID
+        if (e.target === $('#artistaModal')[0]) { 
+            closeModalArtista();
+        }
+    });
+
+    // Fechar ao pressionar ESC
+    $(document).on('keydown', (e) => {
+        // CORREÇÃO: Busca direta pelo ID
+        if (e.key === 'Escape' && $('#artistaModal').css('display') === 'flex') {
+            closeModalArtista();
+        }
+    });
+    
+    // Função para carregar os detalhes do artista via AJAX
+    function fetchArtistaDetails(artistaId, viewStatus) {
+    
+        // 1. Mostrar Modal e Loader (CORREÇÃO DEFINITIVA APLICADA)
+        
+        // LINHA CRUCIAL: Abre o modal ANTES de qualquer requisição, usando o DOM nativo.
+        const modalElement = document.getElementById('artistaModal');
+        if (modalElement) {
+            modalElement.style.display = 'flex'; 
+        }
+        
+        // Assegura que o conteúdo antigo é limpo
+        $('#artistaModal').find('.modal-content').removeClass('loaded');
+        
+        $loaderDivArtista.show();
+        $detailsDivArtista.hide();
+        
+        // Segurança: Fecha o modal de Álbum se estiver aberto
+        if ($('#albumModal').css('display') === 'flex') {
+            closeModal(); 
+        }
+    
+        // 2. Requisição AJAX
+        $.ajax({
+            url: '../api/' + fetchUrlBaseArtista + artistaId, 
+            type: 'GET',
+            dataType: 'html', 
+            success: function(response) {
+                $detailsDivArtista.html(response);
+                
+                // Um pequeno delay pode resolver problemas de renderização lenta em navegadores
+                setTimeout(() => {
+                    $detailsDivArtista.show();
+                    $loaderDivArtista.hide();
+                    $('#artistaModal').find('.modal-content').addClass('loaded');
+                }, 50); // Adiciona 50ms de espera antes de mostrar o conteúdo
+            },
+            error: function() {
+                $detailsDivArtista.html('<p class="alert alert-danger">Erro ao carregar detalhes do artista. Tente novamente.</p>');
+                $detailsDivArtista.show();
+                $loaderDivArtista.hide();
+                $('#artistaModal').find('.modal-content').addClass('loaded');
+            }
+        });
+    }
+    
+    // 3. CAPTURAR CLIQUE NO CARD DE ARTISTA (Certifica-se de que o evento não está sendo interrompido)
+    $(document).on('click', '.open-modal-artista', function(e) {
+        e.preventDefault(); // Impede qualquer ação padrão do elemento
+        e.stopPropagation(); // Impede que o clique suba para o documento
+        
+        const artistaId = $(this).data('artista-id');
+        const viewStatus = $(this).data('ativo'); 
+    
+        if (artistaId) {
+            fetchArtistaDetails(artistaId, String(viewStatus));
+        } else {
+            console.error("ID do artista ausente no card.");
+        }
+    });
+    
+    // =========================================================================
+    // FIM DA ADIÇÃO PARA ARTISTAS
+    // =========================================================================
 
 }); // Fim do $(document).ready
