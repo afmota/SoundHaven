@@ -126,7 +126,7 @@ function getPaginationLink($pagina, $view_status) {
                     <a href="artistas.php?view_status=0" class="btn-action btn-lixeira-toggle <?php echo ($view_status == 0) ? 'primary-action' : 'secondary-action'; ?>">
                         <i class="fas fa-trash"></i> Lixeira
                     </a>
-                    <a href="adicionar_artista.php" class="btn-action primary-action">
+                    <a href="adicionar_artista.php" class="btn-adicionar-album">
                         <i class="fas fa-plus"></i> Adicionar Artista
                     </a>
                 </div>

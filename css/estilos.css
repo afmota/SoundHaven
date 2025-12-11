@@ -935,7 +935,8 @@ footer {
     text-overflow: ellipsis;
     /* Limita o título a duas linhas */
     display: -webkit-box;
-    -webkit-line-clamp: 2; 
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     width: 100%;
     color: var(--cor-texto-principal);
