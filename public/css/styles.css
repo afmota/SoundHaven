@@ -1,0 +1,9 @@
+/* Arquivo: /public/css/styles.css (Mestre) */
+
+/* Importa a base, depois o header, e agora os módulos do dashboard */
+
+@import url("_base.css");
+@import url("_header.css");
+@import url("_dashboard.css");
+@import url("_metrics.css"); /* Adicionado */
+@import url("_album_card.css"); /* Adicionado */

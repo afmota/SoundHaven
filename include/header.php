@@ -1,25 +1,14 @@
 <?php 
-// Arquivo: header.php
+// Arquivo: include/header.php
 // A linha 'session_start()' DEVE vir antes de qualquer saída HTML!
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
 // Variáveis de sessão para facilitar o uso no HTML
-$logado = isset($_SESSION['usuario_id']);
+$logado = isset($_SESSION['user_id']); // AJUSTADO: Usando 'user_id' conforme o login.php refatorado
 $usuario_nome = $logado ? $_SESSION['usuario_nome'] : 'Visitante';
 $isAdmin = $logado && ($_SESSION['usuario_tipo'] == 1);
-
-// Redirecionamento de segurança: Mantenha esta checagem no topo
-// de CADA arquivo que requer login (store.php, dashboard.php, etc.)
-/*
-$pagina_atual = basename($_SERVER['PHP_SELF']);
-if (!$logado && $pagina_atual != 'index.php' && $pagina_atual != 'login.php') {
-    header('Location: index.php');
-    exit();
-}
-// OBS: Removi o bloco acima, pois é melhor você ter a checagem no topo de CADA arquivo.
-*/
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -27,19 +16,17 @@ if (!$logado && $pagina_atual != 'index.php' && $pagina_atual != 'login.php') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SoundHaven | Catálogo</title> 
-    <link rel="icon" href="../imagens/SoundHaven.ico" type="image/x-icon">
+    <link rel="icon" href="/public/imagens/SoundHaven.ico" type="image/x-icon">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <link rel="stylesheet" href="../css/estilos.css">
-    <link rel="stylesheet" href="../css/colecao.css">
-    <link rel="stylesheet" href="../css/loja.css">
+    <link rel="stylesheet" href="/public/css/styles.css">
 </head>
 <body>
 
 <header>
     <div class="nav-content">
         <a href="/dashboard.php" class="header-logo-container">
-            <img src="../imagens/SoundHaven.png" alt="Logo SoundHaven" class="header-logo-img">
+            <img src="/public/imagens/SoundHaven.png" alt="Logo SoundHaven" class="header-logo-img">
             
             <div class="header-logo-text">
                 <span class="logo-main-title">SoundHaven</span>
@@ -54,9 +41,9 @@ if (!$logado && $pagina_atual != 'index.php' && $pagina_atual != 'login.php') {
                 </a>
 
                 <div class="profile-dropdown-container" id="profileDropdown">
-                                        <div class="profile-avatar-trigger" title="<?php echo htmlspecialchars($usuario_nome); ?>"> 
-                        <img src="../imagens/default-avatar.png" alt="Perfil do Usuário" class="profile-avatar">
-                                        </div>
+                    <div class="profile-avatar-trigger" title="<?php echo htmlspecialchars($usuario_nome); ?>"> 
+                        <img src="/public/imagens/default-avatar.png" alt="Perfil do Usuário" class="profile-avatar">
+                    </div>
 
                     <nav class="dropdown-menu">
                         <ul>
@@ -85,27 +72,4 @@ if (!$logado && $pagina_atual != 'index.php' && $pagina_atual != 'login.php') {
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="/js/filtro.js"></script>
 <script src="/js/scripts.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const dropdownContainer = document.getElementById('profileDropdown');
-
-        // Garante que só tente acessar elementos se o dropdown estiver no DOM (usuário logado)
-        if (!dropdownContainer) return;
-
-        const avatarTrigger = dropdownContainer.querySelector('.profile-avatar-trigger');
-
-        // Função para alternar a visibilidade do menu
-        avatarTrigger.addEventListener('click', function(event) {
-            event.stopPropagation(); 
-            dropdownContainer.classList.toggle('menu-aberto');
-        });
-
-        // Função para fechar o menu se o usuário clicar fora dele
-        document.addEventListener('click', function(event) {
-            // Se o clique não foi dentro do container do dropdown
-            if (!dropdownContainer.contains(event.target)) {
-                dropdownContainer.classList.remove('menu-aberto');
-            }
-        });
-    });
-</script>
+<script src="/js/header_scripts.js"></script>

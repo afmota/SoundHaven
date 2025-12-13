@@ -1,181 +1,68 @@
 <?php
-// Arquivo: dashboard.php
+// Arquivo: dashboard.php (Controller e View - CORRIGIDO PDO INJECTION)
 
-// A primeira coisa é carregar a conexão com o banco de dados
-require_once 'db/conexao.php'; 
+session_start();
 
+// 1. CARREGAR O AMBIENTE E VERIFICAR LOGIN
 // ----------------------------------------------------
-// 0. DEFINIÇÃO DE VARIÁVEIS E BUSCA DE DADOS
-// ----------------------------------------------------
+// Carrega o .env E CRIA A CONEXÃO $pdo
+// ATENÇÃO: Verifique o caminho. Se dashboard.php está na raiz, o caminho abaixo está correto.
+require_once 'src/config/config.php'; 
+// Inclui o Model
+require_once 'src/Model/AlbumModel.php'; 
 
-$total_albuns = 0;
-// ... (outras variáveis)
-$erro_db = '';
-
-try {
-    // ... (querys 1, 2, 3 e 4 continuam as mesmas)
-
-    // Contagem Total Geral
-    $total_albuns = $pdo->query("SELECT COUNT(id) FROM colecao WHERE ativo = 1")->fetchColumn();
-
-    // Contagem de Artistas Únicos (N:M)
-    $total_artistas = $pdo->query("
-        SELECT COUNT(DISTINCT ca.artista_id) 
-        FROM colecao_artista ca
-        JOIN colecao c ON ca.colecao_id = c.id
-        WHERE c.ativo = 1
-    ")->fetchColumn();
-    
-    // Contagem de Gêneros Únicos (N:M)
-    $total_generos = $pdo->query("
-        SELECT COUNT(DISTINCT cg.genero_id) 
-        FROM colecao_genero cg
-        JOIN colecao c ON cg.colecao_id = c.id
-        WHERE c.ativo = 1
-    ")->fetchColumn();
-    
-    // Contagem de Gravadoras (1:N)
-    $total_gravadoras = $pdo->query("SELECT COUNT(DISTINCT gravadora_id) FROM colecao WHERE ativo = 1 AND gravadora_id IS NOT NULL")->fetchColumn();
-
-    // Contagem por Formato
-    $stmt_formatos = $pdo->prepare("
-        SELECT f.descricao AS formato_descricao, COUNT(c.id) as total
-        FROM colecao c
-        JOIN formatos f ON c.formato_id = f.id
-        WHERE c.ativo = 1
-        GROUP BY f.descricao
-    ");
-    $stmt_formatos->execute();
-    $formatos = $stmt_formatos->fetchAll(PDO::FETCH_KEY_PAIR);
-    
-    // Busca por variações de CD/LP/Vinyl para maior compatibilidade
-    $total_cds = ($formatos['CD'] ?? 0) + ($formatos['cd'] ?? 0); 
-    $total_lps = ($formatos['LP'] ?? 0) + ($formatos['lp'] ?? 0) + ($formatos['Vinyl'] ?? 0) + ($formatos['vinyl'] ?? 0); 
-
-    // 2. QUERY DE ABRANGÊNCIA
-    $stmt_span = $pdo->query("
-        SELECT 
-            MIN(YEAR(data_lancamento)) AS min_year, 
-            MAX(YEAR(data_lancamento)) AS max_year
-        FROM colecao 
-        WHERE ativo = 1 AND data_lancamento IS NOT NULL
-    ")->fetch(PDO::FETCH_ASSOC);
-
-    if ($stmt_span && $stmt_span['min_year'] && $stmt_span['max_year']) {
-        $ano_min = $stmt_span['min_year'];
-        $ano_max = $stmt_span['max_year'];
-        $anos_cobertos = $ano_max - $ano_min + 1;
-    }
-
-    // 3. QUERY DE ANIVERSÁRIOS DO DIA (CORRIGIDA NA INTERAÇÃO ANTERIOR)
-    $hoje_mes_dia = date('m-d'); 
-    $ano_atual = date('Y');
-
-    $stmt_aniversariantes = $pdo->prepare("
-        SELECT 
-            c.id, c.titulo, c.capa_url, 
-            YEAR(c.data_lancamento) AS ano_lancamento, YEAR(c.data_aquisicao) AS ano_aquisicao,
-            c.data_lancamento AS data_lancamento_completa, c.data_aquisicao AS data_aquisicao_completa
-        FROM colecao c
-        WHERE c.ativo = 1
-          AND (
-            DATE_FORMAT(c.data_lancamento, '%m-%d') = :hoje_mes_dia_lancamento 
-            OR 
-            DATE_FORMAT(c.data_aquisicao, '%m-%d') = :hoje_mes_dia_aquisicao
-          )
-    ");
-    $stmt_aniversariantes->execute([
-        ':hoje_mes_dia_lancamento' => $hoje_mes_dia,
-        ':hoje_mes_dia_aquisicao' => $hoje_mes_dia
-    ]);
-    $albuns_aniversariantes = $stmt_aniversariantes->fetchAll(PDO::FETCH_ASSOC);
-    $aniversariantes = []; // Inicializa a variável para evitar erro caso não haja aniversariantes
-
-    if (!empty($albuns_aniversariantes)) {
-        $ids_aniversariantes = implode(',', array_column($albuns_aniversariantes, 'id'));
-        $stmt_artistas_aniversariantes = $pdo->prepare("
-            SELECT ca.colecao_id, a.nome AS nome FROM colecao_artista ca
-            JOIN artistas a ON ca.artista_id = a.id
-            WHERE ca.colecao_id IN ($ids_aniversariantes)
-        ");
-        $stmt_artistas_aniversariantes->execute();
-        $artistas_map_aniversariantes = [];
-        while ($row = $stmt_artistas_aniversariantes->fetch(PDO::FETCH_ASSOC)) {
-            $artistas_map_aniversariantes[$row['colecao_id']][] = $row['nome'];
-        }
-        
-        foreach ($albuns_aniversariantes as $album) {
-            $id = $album['id'];
-            $album['artista_nome'] = isset($artistas_map_aniversariantes[$id]) ? implode(', ', $artistas_map_aniversariantes[$id]) : 'Artista Desconhecido';
-            $info = [];
-            if ($album['data_lancamento_completa'] && date('m-d', strtotime($album['data_lancamento_completa'])) == $hoje_mes_dia) {
-                $anos = $ano_atual - $album['ano_lancamento'];
-                if ($anos > 0) { $info[] = ['type' => 'release', 'years' => $anos, 'text' => "{$anos} anos desde o lançamento"]; }
-            }
-            if ($album['data_aquisicao_completa'] && date('m-d', strtotime($album['data_aquisicao_completa'])) == $hoje_mes_dia) {
-                $anos = $ano_atual - $album['ano_aquisicao'];
-                if ($anos > 0) { $info[] = ['type' => 'acquisition', 'years' => $anos, 'text' => "{$anos} anos na coleção"]; }
-            }
-            if (!empty($info)) { $album['aniversario_info'] = $info; $aniversariantes[] = $album; }
-        }
-    }
-
-    // 4. QUERY DOS ÚLTIMOS ÁLBUNS
-    $ultimos_albuns = []; // Inicializa a variável para evitar erro caso não haja álbuns
-    $stmt_ids = $pdo->prepare("
-        SELECT id FROM colecao WHERE ativo = 1 ORDER BY data_aquisicao DESC LIMIT 5
-    ");
-    $stmt_ids->execute();
-    $recent_ids = $stmt_ids->fetchAll(PDO::FETCH_COLUMN);
-    
-    
-    if (!empty($recent_ids)) {
-        $in_clause = implode(',', $recent_ids);
-        $stmt_albuns = $pdo->prepare("
-            SELECT c.id, c.titulo, c.capa_url, c.numero_catalogo, YEAR(c.data_lancamento) AS ano_lancamento, 
-                   r.nome AS gravadora_nome, f.descricao AS formato_descricao 
-            FROM colecao c
-            LEFT JOIN gravadoras r ON c.gravadora_id = r.id
-            LEFT JOIN formatos f ON c.formato_id = f.id 
-            WHERE c.id IN ($in_clause)
-            ORDER BY c.data_aquisicao DESC
-        ");
-        $stmt_albuns->execute();
-        $albuns_detalhes = $stmt_albuns->fetchAll(PDO::FETCH_ASSOC);
-
-        $stmt_artistas = $pdo->prepare("
-            SELECT ca.colecao_id, a.nome AS nome FROM colecao_artista ca JOIN artistas a ON ca.artista_id = a.id WHERE ca.colecao_id IN ($in_clause)
-        ");
-        $stmt_artistas->execute();
-        $artistas_map = [];
-        while ($row = $stmt_artistas->fetch(PDO::FETCH_ASSOC)) { $artistas_map[$row['colecao_id']][] = $row['nome']; }
-
-        $stmt_generos = $pdo->prepare("
-            SELECT cg.colecao_id, g.descricao AS nome FROM colecao_genero cg JOIN generos g ON cg.genero_id = g.id WHERE cg.colecao_id IN ($in_clause)
-        ");
-        $stmt_generos->execute();
-        $generos_map = [];
-        while ($row = $stmt_generos->fetch(PDO::FETCH_ASSOC)) { $generos_map[$row['colecao_id']][] = $row['nome']; }
-
-        foreach ($albuns_detalhes as $album) {
-            $id = $album['id'];
-            $album['artista_nome'] = isset($artistas_map[$id]) ? implode(', ', $artistas_map[$id]) : 'Artista Desconhecido';
-            $album['genero_nome'] = isset($generos_map[$id]) ? implode(', ', $generos_map[$id]) : 'Não Definido';
-            $ultimos_albuns[] = $album;
-        }
-    }
-
-
-} catch (PDOException $e) {
-    $erro_db = "Erro ao buscar dados do Dashboard: " . $e->getMessage();
+// Verifica se o usuário está logado (SEGURANÇA!)
+if (!isset($_SESSION['user_id'])) {
+    header('Location: index.php'); 
+    exit();
 }
+
+// ----------------------------------------------------
+// 2. LÓGICA (Controller) - BUSCA DE DADOS
+// ----------------------------------------------------
+
+$userId = $_SESSION['user_id']; 
+
+// Instancia o Model para buscar os dados
+// CORRIGIDO: Agora, passamos a variável $pdo (criada em config.php) para o construtor.
+$albumModel = new AlbumModel($pdo); 
+
+// Busca os dados do Dashboard
+$stats = $albumModel->getDashboardStats($userId);
+
+// Atribuição de variáveis (para manter a compatibilidade com o HTML existente)
+$erro_db = $stats['erro_db'] ?? '';
+$total_albuns = $stats['count_total'] ?? 0;
+$total_lps = $stats['count_lp'] ?? 0;
+$total_cds = $stats['count_cd'] ?? 0;
+$total_cdrs = $stats['count_cdr'] ?? 0; // NOVO CARD
+$total_k7 = $stats['count_k7'] ?? 0;
+$total_digital = $stats['count_digital'] ?? 0;
+$total_video = ($stats['count_dvd'] ?? 0) + ($stats['count_bluray'] ?? 0);
+$total_artistas = $stats['count_artistas'] ?? 0;
+
+// (Manter estes em zero até implementarmos as queries no Model)
+$total_generos = $stats['total_generos'] ?? 0;
+$total_gravadoras = $stats['total_gravadoras'] ?? 0;
+
+$ano_min = $stats['min_year'] ?? date('Y');
+$ano_max = $stats['max_year'] ?? date('Y');
+$anos_cobertos = $stats['years_span'] ?? 1;
+
+$aniversariantes = $stats['aniversariantes'] ?? [];
+$ultimos_albuns = $stats['ultimos_albuns'] ?? [];
+
+
+// ----------------------------------------------------
+// 3. APRESENTAÇÃO (View)
+// ----------------------------------------------------
 
 // Inclui o Cabeçalho
 require_once 'include/header.php'; 
 ?>
 
 <?php if (!empty($erro_db)): ?>
-    <div class="alerta container" style="margin-top: 85px;"><?php echo $erro_db; ?></div>
+    <div class="alerta container" style="margin-top: 85px; background-color: #dc3545; color: white; padding: 15px; border-radius: 5px;"><?php echo $erro_db; ?></div>
 <?php endif; ?>
 
 <div class="dashboard-header-section container">
@@ -183,38 +70,42 @@ require_once 'include/header.php';
         <div class="dashboard-title">
             <span class="dashboard-album-count"><?php echo $total_albuns; ?> Álbuns na Coleção</span>
         </div>
-        </div>
+    </div>
 </div>
 
 <div class="metric-grid container" style="padding-top: 0px;">
-    <!-- CARD DE TOTAL DE ÁLBUNS: Link para colecao.php (sem filtro) -->
+    
     <a href="colecao/colecao.php" style="text-decoration: none; color: inherit;">
-        <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_albuns; ?></div><div class="metric-label">Total de Álbuns</div></div><div class="icon-container cor-1"><i class="fas fa-compact-disc"></i></div></div></div>
+        <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_albuns; ?></div><div class="metric-label">Álbuns</div></div><div class="icon-container cor-1"><i class="fas fa-compact-disc"></i></div></div></div>
     </a>
     
-    <!-- CARD DE LP (Vinyl): Link para colecao.php?formato=LP -->
     <a href="colecao/colecao.php?formato=LP" style="text-decoration: none; color: inherit;">
         <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_lps; ?></div><div class="metric-label">LPs (Vinyl)</div></div><div class="icon-container cor-2"><i class="fas fa-record-vinyl"></i></div></div></div>
     </a>
     
-    <!-- CARD DE CD: Link para colecao.php?formato=CD -->
     <a href="colecao/colecao.php?formato=CD" style="text-decoration: none; color: inherit;">
-        <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_cds; ?></div><div class="metric-label">CDs</div></div><div class="icon-container cor-3"><i class="fas fa-compact-disc"></i></div></div></div>
+        <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_cds; ?></div><div class="metric-label">CD's</div></div><div class="icon-container cor-3"><i class="fas fa-compact-disc"></i></div></div></div>
     </a>
     
-    <!-- Outros cards (Gêneros, Artistas, etc.) continuam sem links por enquanto -->
-    <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_generos; ?></div><div class="metric-label">Gêneros Únicos</div></div><div class="icon-container cor-4"><i class="fas fa-chart-line"></i></div></div></div>
-    <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_artistas; ?></div><div class="metric-label">Artistas Únicos</div></div><div class="icon-container cor-5"><i class="fas fa-users"></i></div></div></div>
+    <a href="colecao/colecao.php?formato=CD-R" style="text-decoration: none; color: inherit;">
+        <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_cdrs; ?></div><div class="metric-label">CD-R's</div></div><div class="icon-container cor-7"><i class="fas fa-compact-disc"></i></div></div></div>
+    </a>
+    
+    <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_artistas; ?></div><div class="metric-label">Artistas</div></div><div class="icon-container cor-5"><i class="fas fa-users"></i></div></div></div>
+
+    <!---<div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_generos; ?></div><div class="metric-label">Gêneros Únicos</div></div><div class="icon-container cor-4"><i class="fas fa-chart-line"></i></div></div></div> -->
+    
     <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_gravadoras; ?></div><div class="metric-label">Gravadoras</div></div><div class="icon-container cor-6"><i class="fas fa-building"></i></div></div></div>
-</div>
+    
+    </div>
 
 <div class="span-card-container container" style="padding-top: 0px;">
-    <div class="span-card">
+    <div class="span-card card">
         <div class="span-details">
             <i class="fas fa-calendar-alt"></i> 
             <div>
                 <div class="span-title">Abrangência da Coleção</div>
-                <div class="span-years-range">De <?php echo $ano_min; ?> a <?php echo $ano_max; ?></div>
+                <div class="span-years-range">Lançamentos entre <?php echo $ano_min; ?> e <?php echo $ano_max; ?></div>
             </div>
         </div>
         
@@ -275,7 +166,7 @@ require_once 'include/header.php';
             <?php foreach ($ultimos_albuns as $album): ?>
                 
                 <a href="/colecao/detalhes_colecao.php?id=<?php echo $album['id']; ?>" 
-                   class="card album-card-modern group">
+                    class="card album-card-modern group">
                     
                     <button 
                         type="button" 
@@ -300,8 +191,15 @@ require_once 'include/header.php';
                         
                         <span class="album-format-tag <?php 
                             $formato = strtolower($album['formato_descricao'] ?? '');
-                            echo (str_contains($formato, 'lp') || str_contains($formato, 'vinyl')) 
-                                ? 'tag-vinyl' : 'tag-cd'; 
+
+                            if (str_contains($formato, 'lp') || str_contains($formato, 'vinyl')) {
+                                echo 'tag-vinyl'; 
+                            } elseif (str_contains($formato, 'cd-r')) {
+                                echo 'tag-cdr'; // Nova condição para CD-R
+                            } else {
+                                // Assume CD ou K7, ou outros, usa o padrão
+                                echo 'tag-cd'; 
+                            }
                         ?>">
                             <?php echo htmlspecialchars($album['formato_descricao'] ?? '-'); ?>
                         </span>

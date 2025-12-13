@@ -1,0 +1,208 @@
+/* Arquivo: /public/css/_header.css */
+
+/* ================================================ */
+/* HEADER E NAVEGAÇÃO - DROPDOWN E LOGO ATUALIZADOS */
+/* ================================================ */
+header {
+    background-color: #111827; 
+    color: #f3f4f6;
+    padding: 15px 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.nav-content {
+    max-width: 1280px; 
+    margin: 0 auto;    
+    padding: 0 20px; 
+    
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* ESTRUTURA DO LOGO (Esquerda) */
+.header-logo-container {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: #fff; 
+}
+
+.header-logo-img {
+    height: 40px; 
+    width: auto;
+    margin-right: 10px;
+}
+
+.header-logo-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1; 
+}
+
+.logo-main-title {
+    font-size: 1.5em; 
+    font-weight: 700;
+}
+
+.logo-subtitle {
+    font-size: 0.8em; 
+    font-weight: 300;
+    color: var(--cor-texto-secundario); 
+}
+
+/* ESTRUTURA DO MENU (Direita) */
+.header-right-menu {
+    display: flex;
+    align-items: center;
+    gap: 20px; /* Espaçamento entre o botão Adicionar e o Avatar */
+}
+
+/* Botão de Adicionar Álbum */
+.btn-adicionar-album {
+    background-color: #3b82f6; 
+    color: white;
+    padding: 8px 15px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    transition: background-color 0.3s;
+}
+
+.btn-adicionar-album:hover {
+    background-color: #2563eb; 
+}
+
+.btn-adicionar-album i {
+    margin-right: 8px;
+    font-size: 1.1em;
+}
+
+/* -------------------------------------- */
+/* ESTILOS DO DROPDOWN (AVATAR MENU)      */
+/* -------------------------------------- */
+
+.profile-dropdown-container {
+    position: relative;
+    height: 40px; 
+    width: 40px;
+}
+
+.profile-avatar-trigger {
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    border-radius: 50%;
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+}
+
+.profile-avatar-trigger:hover {
+    box-shadow: 0 0 0 3px var(--cor-destaque);
+}
+
+.profile-avatar {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* O MENU SUSPENSO */
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 50px;
+    right: 0;
+    width: 180px;
+    background-color: var(--cor-fundo-card);
+    border: 1px solid var(--cor-borda);
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.8);
+    z-index: 100;
+    padding: 10px 0;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* EXIBE O MENU */
+.profile-dropdown-container.menu-aberto .dropdown-menu {
+    display: block; 
+    opacity: 1;    
+    transform: translateY(0); 
+}
+
+.dropdown-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: block;
+}
+
+.dropdown-menu li {
+    margin: 0;
+}
+
+.dropdown-menu li a {
+    display: flex;
+    align-items: center;
+    padding: 8px 15px;
+    color: var(--cor-texto-principal);
+    font-weight: 400;
+    font-size: 0.9em;
+    width: 100%;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.dropdown-menu li a:hover {
+    background-color: var(--cor-borda); 
+    color: var(--cor-destaque);
+}
+
+.dropdown-menu .logout-link {
+    color: #f87171;
+}
+
+.dropdown-menu .logout-link:hover {
+    background-color: #451b1b;
+    color: #fca5a5;
+}
+
+.dropdown-menu .separator {
+    height: 1px;
+    background-color: var(--cor-borda);
+    margin: 5px 0;
+}
+
+/* MEDIA QUERIES (Header/Dropdown) */
+@media (max-width: 768px) {
+    .nav-content {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .header-right-menu {
+        justify-content: center;
+        width: 100%;
+    }
+
+    .profile-dropdown-container {
+        position: static; 
+        width: auto;
+    }
+    
+    .dropdown-menu {
+        position: absolute;
+        top: 100px; 
+        right: 20px;
+        left: auto;
+        transform: translateY(0);
+    }
+}

@@ -1,0 +1,29 @@
+/* Arquivo: /public/css/_dashboard.css - Mínimo */
+
+/* ========================================= */
+/* DASHBOARD GERAL E ESTATÍSTICAS          */
+/* ========================================= */
+
+.dashboard-header-section {
+    padding-top: 100px; 
+    margin-bottom: 20px;
+}
+
+.dashboard-title {
+    font-size: 1.8em; 
+    font-weight: 300; 
+    color: var(--cor-texto-principal);
+}
+
+.dashboard-album-count {
+    font-weight: 600; 
+    font-size: 1.8em; 
+}
+
+/* MEDIA QUERIES GERAIS */
+
+@media (max-width: 420px) {
+    .dashboard-title {
+        font-size: 1.5em;
+    }
+}
