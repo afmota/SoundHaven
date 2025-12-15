@@ -330,4 +330,110 @@ class AlbumModel {
         $sql = "INSERT INTO {$table} (colecao_id, {$column}) VALUES " . implode(', ', $values);
         $this->pdo->exec($sql);
     }
+
+/**
+     * Busca uma lista paginada de álbuns da coleção do usuário, com filtros.
+     * @param int $userId ID do usuário
+     * @param int $limit Limite de registros.
+     * @param int $offset Deslocamento (para paginação).
+     * @param string|null $filterFormat Filtro de formato (ex: 'LP', 'CD').
+     * @param int $viewStatus Status de Ativo (1) ou Lixeira (0).
+     * @return array
+     */
+    public function getAlbumsListFiltered(int $userId, int $limit, int $offset, ?string $filterFormat, int $viewStatus): array {
+        
+        // Cláusula WHERE base: user_id e status ativo/lixeira
+        $whereStatus = "c.user_id = :user_id AND c.ativo = :view_status";
+        
+        $sql = "
+            SELECT 
+                c.id, 
+                c.titulo, 
+                c.capa_url, 
+                c.ativo,
+                YEAR(c.data_lancamento) AS ano_lancamento,
+                f.descricao AS formato_descricao,
+                
+                -- Usa subquery para Artista Principal (copiando a lógica do seu código original)
+                (
+                    SELECT a.nome 
+                    FROM colecao_artista AS ca
+                    JOIN artistas AS a ON ca.artista_id = a.id
+                    WHERE ca.colecao_id = c.id
+                    ORDER BY a.nome ASC 
+                    LIMIT 1
+                ) AS artista_principal
+            FROM colecao AS c
+            LEFT JOIN formatos AS f ON c.formato_id = f.id
+            WHERE {$whereStatus} 
+        ";
+        
+        // Adiciona o filtro de formato, se fornecido
+        if ($filterFormat) {
+            $sql .= " AND f.descricao = :formato ";
+        }
+        
+        $sql .= " 
+            ORDER BY c.data_aquisicao DESC, c.titulo ASC
+            LIMIT :limite OFFSET :offset
+        ";
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
+            $stmt->bindParam(':view_status', $viewStatus, PDO::PARAM_INT);
+            $stmt->bindParam(':limite', $limit, PDO::PARAM_INT);
+            $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+            
+            if ($filterFormat) {
+                $stmt->bindParam(':formato', $filterFormat, PDO::PARAM_STR);
+            }
+            
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        } catch (PDOException $e) {
+            error_log("Erro no getAlbumsListFiltered: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Conta o total de álbuns com filtros de formato e status.
+     * @param int $userId ID do usuário
+     * @param string|null $filterFormat Filtro de formato (ex: 'LP', 'CD').
+     * @param int $viewStatus Status de Ativo (1) ou Lixeira (0).
+     * @return int
+     */
+    public function countTotalAlbumsFiltered(int $userId, ?string $filterFormat, int $viewStatus): int {
+        
+        $whereStatus = "c.user_id = :user_id AND c.ativo = :view_status";
+        $sql_select = "SELECT COUNT(c.id) FROM colecao AS c ";
+        $sql_join = "";
+        
+        // Se houver filtro por formato, precisamos do JOIN
+        if ($filterFormat) {
+            $sql_join = "LEFT JOIN formatos AS f ON c.formato_id = f.id";
+            $whereStatus .= " AND f.descricao = :formato";
+        }
+        
+        $sql = $sql_select . $sql_join . " WHERE " . $whereStatus;
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
+            $stmt->bindParam(':view_status', $viewStatus, PDO::PARAM_INT);
+            
+            if ($filterFormat) {
+                $stmt->bindParam(':formato', $filterFormat, PDO::PARAM_STR);
+            }
+            
+            $stmt->execute();
+            return (int) $stmt->fetchColumn();
+
+        } catch (PDOException $e) {
+            error_log("Erro no countTotalAlbumsFiltered: " . $e->getMessage());
+            return 0;
+        }
+    }
 }
