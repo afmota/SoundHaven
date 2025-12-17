@@ -189,20 +189,21 @@ require_once 'include/header.php';
                             </div>
                         <?php endif; ?>
                         
-                        <span class="album-format-tag <?php 
-                            $formato = strtolower($album['formato_descricao'] ?? '');
-
-                            if (str_contains($formato, 'lp') || str_contains($formato, 'vinyl')) {
-                                echo 'tag-vinyl'; 
-                            } elseif (str_contains($formato, 'cd-r')) {
-                                echo 'tag-cdr'; // Nova condição para CD-R
-                            } else {
-                                // Assume CD ou K7, ou outros, usa o padrão
-                                echo 'tag-cd'; 
-                            }
-                        ?>">
-                            <?php echo htmlspecialchars($album['formato_descricao'] ?? '-'); ?>
-                        </span>
+                            <span class="album-format-tag <?php 
+                                $formato = strtolower($album['formato_descricao'] ?? '');
+                                                            
+                                if (str_contains($formato, 'lp') || str_contains($formato, 'vinyl')) {
+                                    echo 'tag-vinyl'; 
+                                } elseif (str_contains($formato, 'cd-r')) {
+                                    echo 'tag-cdr'; 
+                                } elseif (str_contains($formato, 'digital') || str_contains($formato, 'dig')) {
+                                    echo 'tag-dig'; // Preparado para o futuro
+                                } else {
+                                    echo 'tag-cd'; 
+                                }
+                            ?>">
+                                <?php echo htmlspecialchars($album['formato_descricao'] ?? '-'); ?>
+                            </span>
                     </div>
                     
                     <div class="album-details-content">
