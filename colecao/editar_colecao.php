@@ -1,551 +1,143 @@
 <?php
-// Arquivo: editar_colecao.php
-// Formulário e lógica para EDIÇÃO de um item na COLEÇÃO PESSOAL (tabela 'colecao').
-// VERSÃO SIMPLIFICADA (SEM SUPORTE A FAIXAS/MÚSICAS).
-// CORREÇÃO: Tratamento robusto para caracteres especiais e aspas.
+// 1. Configurações Iniciais - Caminho corrigido!
+require_once "../src/config/config.php"; 
+require_once "../funcoes.php";
 
-require_once '../db/conexao.php';
-require_once '../funcoes.php'; 
+$id = $_GET['id'] ?? null;
 
-// Variáveis de status
-$mensagem_status = '';
-$tipo_mensagem = '';
-$item = null;
-$artistas_existentes = [];
-$produtores_existentes = [];
-$generos_existentes = [];
-$estilos_existentes = [];
-
-// Variável para armazenar o ID do item que está sendo editado (GET ou POST)
-$colecao_id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT) ?? filter_input(INPUT_POST, 'colecao_id', FILTER_VALIDATE_INT);
-
-// ----------------------------------------------------
-// 1. CARREGAR DADOS DAS TABELAS DE APOIO (Listas para Dropdowns)
-// ----------------------------------------------------
-$listas = [];
-$sqls = [
-    'artistas' => "SELECT id, nome FROM artistas ORDER BY nome ASC",
-    'produtores' => "SELECT id, nome FROM produtores ORDER BY nome ASC",
-    'gravadoras' => "SELECT id, nome FROM gravadoras ORDER BY nome ASC",
-    'generos' => "SELECT id, descricao FROM generos ORDER BY descricao ASC",
-    'formatos' => "SELECT id, descricao FROM formatos ORDER BY descricao ASC",
-    'estilos' => "SELECT id, descricao FROM estilos ORDER BY descricao ASC",
-];
+if (!$id) {
+    header("Location: store.php?error=id_ausente");
+    exit;
+}
 
 try {
-    foreach ($sqls as $nome => $sql) {
-        $stmt = $pdo->query($sql);
-        $listas[$nome] = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-} catch (\PDOException $e) {
-    die("Erro ao carregar listas de apoio: " . $e->getMessage());
-}
-
-// ----------------------------------------------------
-// 2. PROCESSAMENTO DO FORMULÁRIO (UPDATE com Transação SQL)
-// ----------------------------------------------------
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && $colecao_id) {
-    
-    try {
-        // 0. SANITIZAÇÃO E VALIDAÇÃO DOS DADOS
-        
-        // CORREÇÃO: Decodifica o TÍTULO antes de enviar ao banco.
-        $titulo_input = filter_input(INPUT_POST, 'titulo', FILTER_DEFAULT);
-        $titulo = html_entity_decode($titulo_input, ENT_QUOTES, 'UTF-8');
-        
-        $data_lancamento = filter_input(INPUT_POST, 'data_lancamento', FILTER_SANITIZE_SPECIAL_CHARS);
-        $capa_url = filter_input(INPUT_POST, 'capa_url', FILTER_VALIDATE_URL) ?: null;
-        $data_aquisicao = filter_input(INPUT_POST, 'data_aquisicao', FILTER_SANITIZE_SPECIAL_CHARS);
-        $numero_catalogo = filter_input(INPUT_POST, 'numero_catalogo', FILTER_SANITIZE_SPECIAL_CHARS) ?: null;
-        
-        $preco_str = str_replace(',', '.', filter_input(INPUT_POST, 'preco', FILTER_DEFAULT));
-        $preco = filter_var($preco_str, FILTER_VALIDATE_FLOAT) ?: null;
-        
-        $condicao = filter_input(INPUT_POST, 'condicao', FILTER_SANITIZE_SPECIAL_CHARS) ?: null;
-        
-        // CORREÇÃO: Decodifica OBSERVAÇÕES antes de enviar ao banco.
-        $observacoes_input = filter_input(INPUT_POST, 'observacoes', FILTER_DEFAULT);
-        $observacoes = html_entity_decode($observacoes_input, ENT_QUOTES, 'UTF-8') ?: null;
-
-        $gravadora_id = filter_input(INPUT_POST, 'gravadora_id', FILTER_VALIDATE_INT) ?: null;
-        $formato_id = filter_input(INPUT_POST, 'formato_id', FILTER_VALIDATE_INT);
-
-        $artistas_ids = filter_input(INPUT_POST, 'artistas', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY) ?? [];
-        $produtores_ids = filter_input(INPUT_POST, 'produtores', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY) ?? [];
-        $generos_ids = filter_input(INPUT_POST, 'generos', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY) ?? [];
-        $estilos_ids = filter_input(INPUT_POST, 'estilos', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY) ?? []; 
-        
-        
-        if (!$titulo || !$data_aquisicao || !$formato_id || empty($artistas_ids)) {
-            throw new Exception("Campos obrigatórios (Título, Data de Aquisição, Formato, Artista) não preenchidos.");
-        }
-        
-        // INÍCIO DA TRANSAÇÃO: Tudo ou nada.
-        $pdo->beginTransaction();
-
-        // 1. UPDATE na tabela principal: 'colecao'
-        $sql_colecao = "UPDATE colecao SET 
-                            titulo = :titulo, data_lancamento = :data_lancamento, capa_url = :capa_url, 
-                            data_aquisicao = :data_aquisicao, numero_catalogo = :numero_catalogo, 
-                            preco = :preco, condicao = :condicao, observacoes = :observacoes, 
-                            gravadora_id = :gravadora_id, formato_id = :formato_id
-                            WHERE id = :id";
-                            
-        $stmt_colecao = $pdo->prepare($sql_colecao);
-        $stmt_colecao->execute([
-            ':titulo' => $titulo, 
-            ':data_lancamento' => $data_lancamento ?: null,
-            ':capa_url' => $capa_url,
-            ':data_aquisicao' => $data_aquisicao,
-            ':numero_catalogo' => $numero_catalogo,
-            ':preco' => $preco,
-            ':condicao' => $condicao,
-            ':observacoes' => $observacoes, 
-            ':gravadora_id' => $gravadora_id,
-            ':formato_id' => $formato_id,
-            ':id' => $colecao_id,
-        ]);
-
-        // Função para Limpar e Re-Inserir Relacionamentos (M:N)
-        $insert_m_n = function($pdo, $table, $id_column, $ids_array) use ($colecao_id) {
-            // Limpar todos os relacionamentos existentes
-            $pdo->prepare("DELETE FROM {$table} WHERE colecao_id = :cid")->execute([':cid' => $colecao_id]);
+    // 2. Busca os dados principais do álbum
+    // Corrigido: Não existe artista_id em colecao. Buscamos via colecao_artista.
+    // Usamos GROUP_CONCAT para pegar todos os artistas caso haja mais de um (ex: Collabs)
+    $sql = "SELECT c.*, 
+            GROUP_CONCAT(a.nome SEPARATOR ', ') AS nomes_artistas
+            FROM colecao c 
+            LEFT JOIN colecao_artista ca ON c.id = ca.colecao_id
+            LEFT JOIN artistas a ON ca.artista_id = a.id 
+            WHERE c.id = :id
+            GROUP BY c.id";
             
-            if (empty($ids_array)) return;
-            
-            // Re-inserir os novos (ou os mesmos)
-            $sql = "INSERT INTO {$table} (colecao_id, {$id_column}) VALUES (:cid, :id)";
-            $stmt = $pdo->prepare($sql);
-            foreach ($ids_array as $entity_id) {
-                if (filter_var($entity_id, FILTER_VALIDATE_INT)) {
-                    $stmt->execute([':cid' => $colecao_id, ':id' => $entity_id]);
-                }
-            }
-        };
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([':id' => $id]);
+    $album = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        // 2. Limpar e Re-Inserir Artistas (M:N)
-        $insert_m_n($pdo, 'colecao_artista', 'artista_id', $artistas_ids);
-
-        // 3. Limpar e Re-Inserir Produtores (M:N)
-        $insert_m_n($pdo, 'colecao_produtor', 'produtor_id', $produtores_ids);
-
-        // 4. Limpar e Re-Inserir Gêneros (M:N)
-        $insert_m_n($pdo, 'colecao_genero', 'genero_id', $generos_ids);
-        
-        // 5. Limpar e Re-Inserir Estilos (M:N) 
-        $insert_m_n($pdo, 'colecao_estilo', 'estilo_id', $estilos_ids);
-        
-
-        // FIM DA TRANSAÇÃO: Confirma todas as operações.
-        $pdo->commit();
-        
-        $mensagem_status = "Álbum '{$titulo}' atualizado na sua coleção com sucesso!";
-        $tipo_mensagem = 'sucesso';
-        
-        // Redireciona para evitar re-submit e força recarregamento dos dados
-        header("Location: editar_colecao.php?id={$colecao_id}&status=sucesso&msg=" . urlencode($mensagem_status));
-        exit();
-
-    } catch (\PDOException $e) {
-        $pdo->rollBack();
-        $mensagem_status = "Erro ao atualizar no banco de dados: " . $e->getMessage();
-        $tipo_mensagem = 'erro';
-    } catch (Exception $e) {
-        $mensagem_status = "Erro de validação: " . $e->getMessage();
-        $tipo_mensagem = 'erro';
+    if (!$album) {
+        die("Erro: Álbum não encontrado no banco de dados.");
     }
+
+    // 3. Busca as faixas deste álbum
+    $sqlFaixas = "SELECT * FROM colecao_faixas WHERE colecao_id = :id ORDER BY numero_faixa ASC";
+    $stmtFaixas = $pdo->prepare($sqlFaixas);
+    $stmtFaixas->execute([':id' => $id]);
+    $faixas = $stmtFaixas->fetchAll(PDO::FETCH_ASSOC);
+
+    $album['faixas'] = $faixas ?: []; 
+
+} catch (PDOException $e) {
+    die("Erro crítico de banco de dados: " . $e->getMessage());
 }
-
-// ----------------------------------------------------
-// 3. CARREGAR DADOS EXISTENTES PARA PREENCHIMENTO DO FORMULÁRIO (GET)
-// ----------------------------------------------------
-if ($colecao_id) {
-    try {
-        // SQL para obter os dados principais
-        $sql = "SELECT * FROM colecao WHERE id = :id AND ativo = 1";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([':id' => $colecao_id]);
-        $item = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$item) {
-            $mensagem_status = "Item da coleção ID {$colecao_id} não encontrado.";
-            $tipo_mensagem = 'erro';
-            $colecao_id = null;
-        } else {
-            // Buscar relacionamentos M:N
-            $artistas_existentes = $pdo->query("SELECT artista_id FROM colecao_artista WHERE colecao_id = {$colecao_id}")->fetchAll(PDO::FETCH_COLUMN, 0);
-            $produtores_existentes = $pdo->query("SELECT produtor_id FROM colecao_produtor WHERE colecao_id = {$colecao_id}")->fetchAll(PDO::FETCH_COLUMN, 0);
-            $generos_existentes = $pdo->query("SELECT genero_id FROM colecao_genero WHERE colecao_id = {$colecao_id}")->fetchAll(PDO::FETCH_COLUMN, 0);
-            $estilos_existentes = $pdo->query("SELECT estilo_id FROM colecao_estilo WHERE colecao_id = {$colecao_id}")->fetchAll(PDO::FETCH_COLUMN, 0);
-        }
-
-    } catch (\PDOException $e) {
-        $mensagem_status = "Erro ao carregar dados: " . $e->getMessage();
-        $tipo_mensagem = 'erro';
-    }
-}
-
-// Trata o status da URL após o redirecionamento
-if (isset($_GET['status']) && isset($_GET['msg'])) {
-    $tipo_mensagem = $_GET['status'];
-    $mensagem_status = urldecode($_GET['msg']);
-}
-
-// ----------------------------------------------------
-// 4. HTML DO FORMULÁRIO
-// ----------------------------------------------------
-require_once '../include/header.php'; 
 ?>
 
-<style>
-.form-row-2-col {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px; /* Espaço entre as colunas */
-}
-.form-row-2-col > div {
-    /* Garante que o input/select fique agrupado com o label */
-    display: flex;
-    flex-direction: column;
-}
-.form-row-2-col > div > label {
-    margin-bottom: 5px;
-}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar: <?= htmlspecialchars($album['titulo']) ?></title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .tracklist-table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #1a1a1a; border-radius: 8px; overflow: hidden; }
+        .tracklist-table th { background: #333; color: #aaa; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; }
+        .tracklist-table th, .tracklist-table td { padding: 12px; border-bottom: 1px solid #222; text-align: left; }
+        .editable-cell { background: #252525; border: 1px solid transparent; transition: 0.3s; }
+        .editable-cell:focus { border-color: #007bff; background: #333; outline: none; }
+        .btn-remove { color: #e74c3c; cursor: pointer; transition: 0.2s; }
+        .btn-remove:hover { color: #ff0000; transform: scale(1.1); }
+        .import-section { border: 1px solid #28a745; padding: 20px; border-radius: 10px; margin-bottom: 30px; }
+    </style>
+</head>
+<body>
 
-/* ---------------------------------------------------------------------- */
-/* CSS NECESSÁRIO PARA LÓGICA DE ADIÇÃO RÁPIDA (VISUAL) */
-/* ---------------------------------------------------------------------- */
-
-.form-group-with-add .add-new-controls {
-    display: flex;
-    gap: 5px;
-    align-items: center;
-    margin-top: 5px; 
-}
-
-/* O input e o ícone de 'check' (✓) de salvar devem ser ocultados por padrão */
-.form-group-with-add .add-new-controls .small-input,
-.form-group-with-add .add-new-controls .save-icon {
-    display: none;
-}
-
-/* Quando o modo de adição estiver ativo, inverter: */
-.form-group-with-add.adding-mode .add-new-controls .small-input {
-    display: block; /* Mostra o campo de texto */
-    flex-grow: 1;
-}
-
-/* Oculta o ícone de '+' (adição) no modo de adição */
-.form-group-with-add.adding-mode .add-new-controls .add-icon {
-    display: none; 
-}
-
-/* Mostra o ícone de '✓' (salvar) no modo de adição */
-.form-group-with-add.adding-mode .add-new-controls .save-icon {
-    display: inline-block; 
-}
-
-</style>
-
-<div class="container" style="padding-top: 100px;">
-    <div class="main-layout"> 
-        
-        <main class="content-area full-width">
-            
-            <div class="page-header-actions">
-                <h1><?php echo $colecao_id ? 'Editar Item da Coleção (ID: ' . $colecao_id . ')' : 'Erro: ID não encontrado'; ?></h1>
-                <?php if ($colecao_id): ?>
-                    <a href="/colecao/detalhes_colecao.php?id=<?php echo $colecao_id; ?>" class="back-link">
-                        <i class="fas fa-chevron-left"></i> Voltar aos Detalhes
-                    </a>
-                <?php endif; ?>
-            </div>
-
-            <?php if (!empty($mensagem_status)): ?>
-                <p class="alerta <?php echo $tipo_mensagem; ?>"><?php echo $mensagem_status; ?></p>
-            <?php endif; ?>
-            
-            <?php if ($item): ?>
-                <div class="card">
-                    <p class="intro-text">Atualize os metadados do álbum e os detalhes da sua cópia física.</p>
-
-                    <form method="POST" action="editar_colecao.php" class="edit-form">
-                        
-                        <input type="hidden" name="colecao_id" value="<?php echo $colecao_id; ?>">
-                        
-                        <div class="colecao-grid">
-                            
-                            <fieldset>
-                                <legend><i class="fas fa-compact-disc"></i> Metadados do Álbum</legend>
-
-                                <label for="titulo">Título do Álbum:*</label>
-                                <input type="text" id="titulo" name="titulo" required 
-                                    value="<?php echo htmlspecialchars(html_entity_decode($item['titulo'], ENT_QUOTES, 'UTF-8')); ?>">
-
-                                <label for="artistas">Artista(s):*</label>
-                                <div class="form-group-with-add">
-                                    <select id="artistas" name="artistas[]" multiple required style="min-height: 120px;">
-                                        <?php $selecionados = $artistas_existentes; foreach ($listas['artistas'] as $artista): $is_selected = in_array($artista['id'], $selecionados); ?>
-                                        <option value="<?php echo $artista['id']; ?>" <?php echo $is_selected ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars(html_entity_decode($artista['nome'], ENT_QUOTES, 'UTF-8')); ?>
-                                        </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                    <div class="add-new-controls">
-                                        <input type="text" id="artistas_novo_nome" placeholder="Novo Artista" class="small-input">
-                                        <button type="button" class="btn-add-entity" data-target-id="artistas" data-table="artistas" data-input-id="artistas_novo_nome">
-                                            <i class="fas fa-plus add-icon"></i><i class="fas fa-check save-icon"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <small>Use Ctrl (ou Cmd) para selecionar múltiplos artistas.</small>
-
-                                <label for="produtores">Produtor(es):</label>
-                                <div class="form-group-with-add">
-                                    <select id="produtores" name="produtores[]" multiple style="min-height: 120px;">
-                                        <?php $selecionados = $produtores_existentes; foreach ($listas['produtores'] as $produtor): $is_selected = in_array($produtor['id'], $selecionados); ?>
-                                        <option value="<?php echo $produtor['id']; ?>" <?php echo $is_selected ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars(html_entity_decode($produtor['nome'], ENT_QUOTES, 'UTF-8')); ?>
-                                        </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                    <div class="add-new-controls">
-                                        <input type="text" id="produtores_novo_nome" placeholder="Novo Produtor" class="small-input">
-                                        <button type="button" class="btn-add-entity" data-target-id="produtores" data-table="produtores" data-input-id="produtores_novo_nome">
-                                            <i class="fas fa-plus add-icon"></i><i class="fas fa-check save-icon"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <small>Use Ctrl (ou Cmd) para selecionar múltiplos produtores.</small>
-
-                                <label for="generos">Gênero(s) Principal(is):</label>
-                                <div class="form-group-with-add">
-                                    <select id="generos" name="generos[]" multiple style="min-height: 120px;">
-                                        <?php $selecionados = $generos_existentes; foreach ($listas['generos'] as $genero): $is_selected = in_array($genero['id'], $selecionados); ?>
-                                        <option value="<?php echo $genero['id']; ?>" <?php echo $is_selected ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars(html_entity_decode($genero['descricao'], ENT_QUOTES, 'UTF-8')); ?>
-                                        </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                    <div class="add-new-controls">
-                                        <input type="text" id="generos_novo_nome" placeholder="Novo Gênero" class="small-input">
-                                        <button type="button" class="btn-add-entity" data-target-id="generos" data-table="generos" data-input-id="generos_novo_nome">
-                                            <i class="fas fa-plus add-icon"></i><i class="fas fa-check save-icon"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <small>Gêneros **principais** (Ex: Rock, Jazz).</small>
-
-                                <label for="estilos">Estilos/Subgêneros:</label>
-                                <div class="form-group-with-add">
-                                    <select id="estilos" name="estilos[]" multiple style="min-height: 120px;">
-                                        <?php $selecionados = $estilos_existentes; foreach ($listas['estilos'] as $estilo): $is_selected = in_array($estilo['id'], $selecionados); ?>
-                                        <option value="<?php echo $estilo['id']; ?>" <?php echo $is_selected ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars(html_entity_decode($estilo['descricao'], ENT_QUOTES, 'UTF-8')); ?>
-                                        </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                    <div class="add-new-controls">
-                                        <input type="text" id="estilos_novo_nome" placeholder="Novo Estilo" class="small-input">
-                                        <button type="button" class="btn-add-entity" data-target-id="estilos" data-table="estilos" data-input-id="estilos_novo_nome">
-                                            <i class="fas fa-plus add-icon"></i><i class="fas fa-check save-icon"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <small>Estilos **detalhados** (Ex: Post-Punk, Bossa Nova).</small>
-
-                                <label for="gravadora_id">Gravadora:</label>
-                                <div class="form-group-with-add">
-                                    <select id="gravadora_id" name="gravadora_id">
-                                        <option value="">-- Selecione (Opcional) --</option>
-                                        <?php $selecionado = $item['gravadora_id']; foreach ($listas['gravadoras'] as $gravadora): ?>
-                                        <option value="<?php echo $gravadora['id']; ?>" <?php echo ($selecionado == $gravadora['id']) ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars(html_entity_decode($gravadora['nome'], ENT_QUOTES, 'UTF-8')); ?>
-                                        </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                    <div class="add-new-controls">
-                                        <input type="text" id="gravadora_novo_nome" placeholder="Nova Gravadora" class="small-input">
-                                        <button type="button" class="btn-add-entity" data-target-id="gravadora_id" data-table="gravadoras" data-input-id="gravadora_novo_nome">
-                                            <i class="fas fa-plus add-icon"></i><i class="fas fa-check save-icon"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                <div class="form-row-2-col">
-                                    <div>
-                                        <label for="data_lancamento">Data de Lançamento:</label>
-                                        <input type="date" id="data_lancamento" name="data_lancamento" value="<?php echo htmlspecialchars($item['data_lancamento'] ?? ''); ?>">
-                                    </div>
-                                    <div>
-                                        <label for="capa_url">URL da Capa:</label>
-                                        <input type="url" id="capa_url" name="capa_url" placeholder="https://..." value="<?php echo htmlspecialchars($item['capa_url'] ?? ''); ?>">
-                                    </div>
-                                </div>
-
-                            </fieldset>
-
-                            <fieldset>
-                                <legend><i class="fas fa-receipt"></i> Detalhes da Sua Cópia</legend>
-                                
-                                <div class="form-row-2-col">
-                                    <div>
-                                        <label for="data_aquisicao">Data de Aquisição:*</label>
-                                        <input type="date" id="data_aquisicao" name="data_aquisicao" required 
-                                                        value="<?php echo htmlspecialchars($item['data_aquisicao'] ?? date('Y-m-d')); ?>">
-                                    </div>
-                                    <div>
-                                        <label for="formato_id">Formato:*</label>
-                                        <select id="formato_id" name="formato_id" required>
-                                            <option value="">-- Selecione o Formato --</option>
-                                            <?php $formato_selecionado = $item['formato_id']; foreach ($listas['formatos'] as $formato): ?>
-                                            <option value="<?php echo htmlspecialchars($formato['id']); ?>" <?php echo ($formato_selecionado == $formato['id']) ? 'selected' : ''; ?>>
-                                                <?php echo htmlspecialchars($formato['descricao']); ?>
-                                            </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-                                </div>
-                                
-                                <div class="form-row-2-col">
-                                    <div>
-                                        <label for="numero_catalogo">Número de Catálogo:</label>
-                                        <input type="text" id="numero_catalogo" name="numero_catalogo" placeholder="Ex: R-1234567" value="<?php echo htmlspecialchars($item['numero_catalogo'] ?? ''); ?>">
-                                    </div>
-                                    <div>
-                                        <label for="preco">Preço Pago:</label>
-                                        <input type="text" inputmode="decimal" id="preco" name="preco" placeholder="99,99" value="<?php echo htmlspecialchars(str_replace('.', ',', $item['preco'] ?? '')); ?>" oninput="this.value = this.value.replace('.', ',')">
-                                        <small>Use vírgula para separar os centavos.</small>
-                                    </div>
-                                </div>
-
-                                <label for="condicao">Condição:</label>
-                                <input type="text" id="condicao" name="condicao" placeholder="Ex: Near Mint" value="<?php echo htmlspecialchars($item['condicao'] ?? ''); ?>">
-
-                                <label for="observacoes">Observações:</label>
-                                <textarea id="observacoes" name="observacoes" rows="8"><?php echo htmlspecialchars(html_entity_decode($item['observacoes'] ?? '', ENT_QUOTES, 'UTF-8')); ?></textarea>
-                                <small>Use este campo para anotações pessoais sobre a cópia.</small>
-                                
-                            </fieldset>
-
-                        </div> <div class="form-actions large-gap">
-                            <a href="/colecao/detalhes_colecao.php?id=<?php echo htmlspecialchars($colecao_id); ?>" class="back-link secondary-action">
-                                <i class="fas fa-times-circle"></i> Cancelar
-                            </a>
-                            <button type="submit" class="save-button">
-                                <i class="fas fa-save"></i> Salvar Alterações
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            <?php endif; ?>
-        </main>
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center">
+        <h2><i class="fas fa-record-vinyl"></i> Editar Coleção</h2>
+        <span class="badge bg-info"><?= htmlspecialchars($album['nomes_artistas']) ?></span>
     </div>
+    <hr>
+
+    <form id="form-editar-colecao">
+        <input type="hidden" id="album_id" value="<?= $album['id'] ?>">
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="form-group mb-3">
+                    <label>Título do Álbum</label>
+                    <input type="text" id="titulo_album" class="form-control" value="<?= htmlspecialchars($album['titulo']) ?>" style="font-size: 1.2rem; font-weight: bold;">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group mb-3">
+                    <label>Nº Catálogo (Discogs)</label>
+                    <div class="input-group">
+                        <input type="text" id="cat-numero-import" class="form-control" value="<?= htmlspecialchars($album['numero_catalogo'] ?? '') ?>">
+                        <button type="button" id="btn-import-discogs" class="btn btn-outline-success">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tracklist-section mt-4">
+            <h4><i class="fas fa-list-ol"></i> Faixas do Álbum</h4>
+            <div id="import-status"></div>
+            
+            <table class="tracklist-table">
+                <thead>
+                    <tr>
+                        <th width="5%">#</th>
+                        <th width="70%">Título da Faixa</th>
+                        <th width="15%">Duração</th>
+                        <th width="10%"></th>
+                    </tr>
+                </thead>
+                <tbody id="tracklist-body">
+                    <?php foreach ($album['faixas'] as $faixa): ?>
+                    <tr>
+                        <td class="track-num"><?= $faixa['numero_faixa'] ?></td>
+                        <td contenteditable="true" class="editable-cell editable-title"><?= htmlspecialchars($faixa['titulo']) ?></td>
+                        <td contenteditable="true" class="editable-cell editable-duration"><?= htmlspecialchars($faixa['duracao'] ?? '0:00') ?></td>
+                        <td class="text-center">
+                            <i class="fas fa-times-circle btn-remove" title="Remover Faixa"></i>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+
+            <div class="mt-3">
+                <button type="button" id="btn-add-manual" class="btn btn-sm btn-secondary">
+                    <i class="fas fa-plus"></i> Adicionar Faixa
+                </button>
+            </div>
+        </div>
+
+        <div class="footer-actions mt-5 pt-4 border-top">
+            <button type="button" id="btn-save-full-album" class="btn btn-primary btn-lg px-5">
+                <i class="fas fa-save"></i> SALVAR ALTERAÇÕES
+            </button>
+            <a href="store.php" class="btn btn-link text-muted">Descartar mudanças</a>
+        </div>
+    </form>
 </div>
 
-<script> 
-    // -------------------------------------------------------------------------------------
-    // Inicialização do Formulário: Carregar Listeners (Lógica de Adição Rápida)
-    // CORREÇÃO: Implementa a alternância do "modo de adição"
-    // -------------------------------------------------------------------------------------
-    document.addEventListener('DOMContentLoaded', () => { 
-        
-        const buttons = document.querySelectorAll('.btn-add-entity'); 
-        const endpoint = 'add_entity_ajax.php'; 
+<script src="js/tracklist_manager.js"></script>
 
-        buttons.forEach(button => { 
-            // 1. Lógica para alternar o MODO DE ADIÇÃO (Adicionar/Salvar)
-            button.addEventListener('click', (e) => {
-                e.preventDefault(); 
-                
-                const btn = e.currentTarget;
-                const container = btn.closest('.form-group-with-add');
-                const inputId = btn.getAttribute('data-input-id');
-                const input = document.getElementById(inputId);
-                const value = input.value.trim();
-
-                // -----------------------------------------------------------
-                // CORREÇÃO: Se NÃO ESTIVER no modo de adição, ative o modo.
-                // -----------------------------------------------------------
-                if (!container.classList.contains('adding-mode')) {
-                    // MODO: ATIVAR ADIÇÃO (Revelar input)
-                    container.classList.add('adding-mode');
-                    input.focus(); // Coloca o foco no campo de texto
-                    return; // Sai da função, aguardando o usuário preencher o nome
-                }
-                
-                // -----------------------------------------------------------
-                // Continuação (Se JÁ ESTIVER no modo de adição, Tenta Salvar)
-                // -----------------------------------------------------------
-
-                if (!value) {
-                    // O campo está ativo, mas vazio.
-                    alert('Por favor, insira um nome.');
-                    return; 
-                }
-                
-                // -- Lógica de Salvar a Entidade (AJAX) --
-                
-                const targetId = btn.getAttribute('data-target-id');
-                const table = btn.getAttribute('data-table');
-                const select = document.getElementById(targetId);
-                const isMultiple = select.hasAttribute('multiple');
-                const originalContent = btn.innerHTML; 
-
-                // Feedback visual de carregamento
-                btn.disabled = true;
-                input.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; 
-
-                fetch(endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ table: table, nome: value })
-                })
-                .then(response => {
-                    const status = response.status;
-                    return response.json().then(body => ({ status, body }));
-                })
-                .then(({ status, body }) => {
-                    if (status === 201) {
-                        // Sucesso: 
-                        const newOption = document.createElement('option');
-                        newOption.value = body.id;
-                        newOption.textContent = body.value; 
-                        
-                        select.appendChild(newOption);
-                        
-                        // Seleciona a nova opção
-                        if (isMultiple) {
-                            newOption.selected = true; 
-                        } else {
-                            select.value = body.id; 
-                        }
-                        
-                        alert(`Sucesso! "${body.value}" adicionado.`);
-                        input.value = '';
-
-                    } else if (status === 409) {
-                        alert(body.message + ' Tente selecionar na lista.');
-                        input.value = '';
-                    } else {
-                        alert('Erro ao adicionar: ' + (body.message || 'Erro de comunicação.'));
-                    }
-                })
-                .catch(error => {
-                    console.error('Erro de rede:', error);
-                    alert('Erro de rede ou servidor ao tentar salvar.');
-                })
-                .finally(() => {
-                    // MODO: DESATIVAR ADIÇÃO (Voltar ao estado original)
-                    container.classList.remove('adding-mode');
-                    btn.disabled = false;
-                    input.disabled = false;
-                    btn.innerHTML = originalContent; 
-                });
-            });
-        });
-    });
-</script>
-
-<?php require_once '../include/footer.php'; ?>
+</body>
+</html>
