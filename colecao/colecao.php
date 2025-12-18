@@ -4,6 +4,7 @@
 
 // 1. Conexões e Dependências
 require_once __DIR__ . "/../src/config/config.php"; // Única fonte de conexão agora
+/** @var PDO $pdo */
 require_once __DIR__ . "/../funcoes.php";
 
 // 2. Parâmetros de Filtro e Paginação

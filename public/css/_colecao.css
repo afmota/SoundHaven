@@ -1,7 +1,7 @@
-/*/* -------------------------------------- */
-/*/* AJUSTES PARA LAYOUT DE NAVEGAÇÃO/AÇÕES */
-/*/* -------------------------------------- */
-/*
+/* -------------------------------------- */
+/* AJUSTES PARA LAYOUT DE NAVEGAÇÃO/AÇÕES */
+/* -------------------------------------- */
+
 /*.page-header-actions {
 /*    display: flex;
 /*    justify-content: space-between; /* Alinha Título e Botões */
@@ -10,7 +10,7 @@
 /*    flex-wrap: wrap; /* Permite quebrar em telas menores */
 /*    gap: 15px; /* Espaçamento entre o título e os botões */
 /*}
-/*
+
 /*.view-switcher {
 /*    display: flex;
 /*    gap: 10px; /* Espaço entre os dois botões (Ativos e Lixeira) */
@@ -770,4 +770,135 @@
     overflow: hidden;
     text-overflow: ellipsis;
     width: 80px;
+}
+
+/*-------------------------------------------------------*/
+
+/* Layout Geral */
+body.dark-mode {
+    background: #0f0f0f;
+    color: #e0e0e0;
+    font-family: 'Inter', sans-serif;
+}
+
+.colecao-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+    align-items: start;
+}
+
+/* Transformando Fieldset em Cards Elegantes */
+fieldset {
+    border: none;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 25px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+legend {
+    float: left;
+    width: 100%;
+    padding: 0;
+    margin-bottom: 20px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #00d4ff; /* Azul Neon */
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Estilização dos Inputs */
+input, select, textarea {
+    width: 100%;
+    background: #1a1a1a !important;
+    border: 1px solid #333 !important;
+    border-radius: 8px !important;
+    color: #fff !important;
+    padding: 12px !important;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+}
+
+input:focus, select:focus {
+    border-color: #00d4ff !important;
+    box-shadow: 0 0 8px rgba(0, 212, 255, 0.2);
+    outline: none;
+}
+
+/* A Tabela de Faixas (O Jardim) */
+.tracklist-table {
+    border-collapse: separate;
+    border-spacing: 0 8px; /* Espaço entre as linhas */
+    margin-top: 0;
+}
+
+.tracklist-table th {
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    color: #888;
+    padding: 10px;
+}
+
+.tracklist-table tr {
+    background: rgba(255, 255, 255, 0.02);
+    transition: transform 0.2s;
+}
+
+.tracklist-table tr:hover {
+    background: rgba(255, 255, 255, 0.05);
+    transform: scale(1.01);
+}
+
+.editable-cell {
+    border: none !important;
+    background: transparent !important;
+    cursor: text;
+}
+
+.track-num {
+    color: #00d4ff;
+    font-weight: bold;
+    text-align: center;
+    border-radius: 8px 0 0 8px;
+}
+
+/* Botões */
+.save-button {
+    background: linear-gradient(135deg, #007bff, #00d4ff);
+    border: none;
+    border-radius: 50px;
+    color: white;
+    font-weight: bold;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.save-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0, 212, 255, 0.3);
+}
+
+.btn-import {
+    background: #28a745;
+    border-radius: 8px;
+    border: none;
+    padding: 0 15px;
+}
+
+/* Ajuste para o botão de deletar faixa */
+.btn-remove {
+    color: #ff4d4d;
+    opacity: 0.5;
+    transition: 0.3s;
+}
+
+.btn-remove:hover {
+    opacity: 1;
+    transform: scale(1.2);
 }
