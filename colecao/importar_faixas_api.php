@@ -8,8 +8,8 @@ const DISCOGS_TOKEN = 'XquypjKpERmGKjMRfgUbbVonxtGjHTggIeFgHxvo';
 const USER_AGENT = 'SoundHavenApp/1.0';
 
 // Inclui arquivos
-require_once "../db/conexao.php";
-require_once "../funcoes.php"; 
+require_once "../src/config/config.php";
+require_once "../src/functions/funcoes.php"; 
 
 header('Content-Type: application/json');
 

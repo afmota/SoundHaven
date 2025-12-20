@@ -5,7 +5,7 @@
 session_start();
 
 // 2. Inclui o Model (que por sua vez já inclui o Database)
-require_once 'src/Model/UserModel.php'; 
+require_once '../../src/Model/UserModel.php'; 
 
 // 3. Verifica se o método de requisição é POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -35,7 +35,7 @@ if (!empty($email) && !empty($senha)) {
         $_SESSION['usuario_tipo'] = $usuario['tipo'];
 
         // Redireciona
-        header('Location: dashboard.php'); 
+        header('Location: /dashboard.php'); 
         exit();
         
     } else {

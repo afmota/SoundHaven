@@ -3,7 +3,7 @@ header('Content-Type: application/json');
 
 // 1. CONFIGURAÇÃO - PEGAR O TOKEN NO DISCOGS
 // Vá em: https://www.discogs.com/settings/developers e clique em "Generate Personal Access Token"
-$token = "SEU_TOKEN_AQUI"; 
+$token = "XquypjKpERmGKjMRfgUbbVonxtGjHTggIeFgHxvo"; 
 $userAgent = "SoundHavenApp/1.0 +http://localhost";
 
 $catno = $_GET['catno'] ?? '';

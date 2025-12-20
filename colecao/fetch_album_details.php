@@ -4,7 +4,8 @@
 
 // 1. Conexões e Dependências
 require_once __DIR__ . "/../src/config/config.php"; // O arquivo mestre da conexão
-require_once __DIR__ . "/../funcoes.php";
+/** @var PDO $pdo */
+require_once __DIR__ . "/../src/functions/funcoes.php";
 
 header('Content-Type: application/json');
 

@@ -56,7 +56,7 @@ $isAdmin = $logado && ($_SESSION['usuario_tipo'] == 1);
                             <?php endif; ?>
                             <li class="separator"></li>
                             <li><a href="/perfil.php"><i class="fas fa-user-circle"></i> Meu Perfil</a></li>
-                            <li><a href="/logout.php" class="logout-link"><i class="fas fa-sign-out-alt"></i> Sair</a></li>
+                            <li><a href="/src/auth/logout.php" class="logout-link"><i class="fas fa-sign-out-alt"></i> Sair</a></li>
                         </ul>
                     </nav>
                 </div>

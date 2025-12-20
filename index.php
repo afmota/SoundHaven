@@ -48,7 +48,7 @@ if (isset($_SESSION['user_id'])) {
                    <?php echo $erro; ?>
                 </p>
                 <?php endif; ?>
-                <form action="login.php" method="post" autocomplete="on">
+                <form action="src/auth/login.php" method="post" autocomplete="on">
                    <div class="campo">
                       <span class="material-symbols-outlined">person</span>
                       <input type="email" name="login" id="ilogin" placeholder="seu e-mail" autocomplete="email" required maxlength="50">
