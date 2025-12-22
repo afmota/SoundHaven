@@ -114,4 +114,28 @@ class StoreModel {
 
         return empty($condicoes) ? '1=1' : implode(' AND ', $condicoes);
     }
+
+    /**
+     * Busca detalhes completos de um álbum específico para o Modal
+     */
+    public function getDetalhes(int $id): array|false {
+        $sql = "SELECT 
+                    s.id, s.titulo, s.data_lancamento, s.criado_em, s.atualizado_em, s.capa_url,
+                    a.nome AS nome_artista,
+                    ta.descricao AS descricao_tipo,
+                    st.descricao AS descricao_situacao,
+                    f.descricao AS descricao_formato,
+                    s.situacao AS situacao_id 
+                FROM store AS s
+                LEFT JOIN artistas AS a ON s.artista_id = a.id
+                LEFT JOIN tipo_album AS ta ON s.tipo_id = ta.id
+                LEFT JOIN situacao AS st ON s.situacao = st.id
+                LEFT JOIN formatos AS f ON s.formato_id = f.id
+                WHERE s.id = :id AND s.deletado = 0";
+    
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':id' => $id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
 }
