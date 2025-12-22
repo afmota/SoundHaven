@@ -1,0 +1,28 @@
+/* Layout da Grade da Loja */
+.store-grid-container {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr); /* 5 colunas fixas */
+    gap: 20px;
+    margin-top: 20px;
+}
+
+/* Estilo do Card de Álbum */
+.album-card {
+    background-color: var(--cor-fundo-card, #2a2a2a);
+    border: 1px solid var(--cor-borda, #444);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px var(--sombra-card, rgba(0,0,0,0.3));
+    transition: transform 0.2s;
+}
+
+.album-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Responsividade: Se a tela for pequena (celular), vira 2 colunas */
+@media (max-width: 768px) {
+    .store-grid-container {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

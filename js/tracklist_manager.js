@@ -1,17 +1,16 @@
 /**
- * SoundHaven - Tracklist Manager
- * Gerencia a sincronização com Discogs, edição manual e salvamento final.
+ * SoundHaven - Tracklist Manager (Versão Consolidada)
+ * Gerencia: Sincronização Discogs, Adição Manual, Remoção e Salvamento Inteligente (Insert/Update).
  */
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- 1. LÓGICA DE SINCRONIZAÇÃO COM O DISCOGS ---
+    // --- 1. SINCRONIZAÇÃO COM O DISCOGS ---
     const btnImport = document.getElementById('btn-import-discogs');
     if (btnImport) {
         btnImport.addEventListener('click', async () => {
             const catNo = document.getElementById('numero_catalogo').value;
-            const colecaoId = document.getElementById('colecao_id').value;
-
+            // No caso de inserção, o colecaoId pode ser 0, mas a API precisa do Catálogo
             if (!catNo) {
                 alert("Por favor, digite o Número de Catálogo primeiro.");
                 return;
@@ -22,7 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const formData = new FormData();
             formData.append('numero_catalogo', catNo);
-            formData.append('colecao_id', colecaoId);
 
             try {
                 const response = await fetch('importar_faixas_api.php', {
@@ -33,10 +31,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
 
                 if (data.success && data.tracklist) {
-                    if (confirm(`Encontramos o álbum: ${data.release_title}\n\nDeseja carregar as ${data.tracklist.length} faixas na lista?`)) {
-                        
+                    if (confirm(`Encontramos: ${data.release_title}\nCarregar ${data.tracklist.length} faixas?`)) {
                         const tbody = document.getElementById('tracklist-body');
-                        tbody.innerHTML = ''; // Limpa a tabela atual
+                        tbody.innerHTML = ''; 
 
                         data.tracklist.forEach((track) => {
                             const row = `
@@ -54,11 +51,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
                     }
                 } else {
-                    alert("Atenção: " + (data.message || "Não foi possível encontrar este álbum no Discogs."));
+                    alert("Aviso: " + (data.message || "Álbum não encontrado no Discogs."));
                 }
             } catch (error) {
-                console.error("Erro na sincronização:", error);
-                alert("Erro ao conectar com o script de importação.");
+                console.error("Erro Discogs:", error);
+                alert("Erro ao conectar com a API de importação.");
             } finally {
                 btnImport.innerHTML = '<i class="fas fa-sync"></i> Sincronizar Discogs';
                 btnImport.disabled = false;
@@ -66,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- 2. ADICIONAR FAIXA MANUALMENTE ---
+    // --- 2. GESTÃO MANUAL DA TABELA (ADICIONAR/REMOVER) ---
     const btnAddManual = document.getElementById('btn-add-manual');
     if (btnAddManual) {
         btnAddManual.addEventListener('click', () => {
@@ -87,13 +84,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- 3. REMOVER FAIXA (DELEGAÇÃO DE EVENTO) ---
     const tracklistBody = document.getElementById('tracklist-body');
     if (tracklistBody) {
-        tracklistBody.addEventListener('click', function(e) {
+        tracklistBody.addEventListener('click', (e) => {
             const btnRemove = e.target.closest('.remove-track');
             if (btnRemove) {
-                if (confirm('Deseja remover esta faixa da lista?')) {
+                if (confirm('Remover esta faixa?')) {
                     btnRemove.closest('tr').remove();
                     reordenarFaixas();
                 }
@@ -108,24 +104,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- 4. SALVAMENTO FINAL (CONCLUIR E SALVAR) ---
+    // --- 3. SALVAMENTO (LOGICA DUPLA: INSERT OU UPDATE) ---
     const btnSave = document.getElementById('btn-save-full-album');
     if (btnSave) {
         btnSave.addEventListener('click', async () => {
             
-            const getVal = (id) => {
-                const el = document.getElementById(id);
-                return el ? el.value : null; 
-            };
-
+            const getVal = (id) => document.getElementById(id)?.value || '';
             const getSelectValues = (id) => {
                 const el = document.getElementById(id);
                 return el ? Array.from(el.selectedOptions).map(o => o.value) : [];
             };
 
-            // Coleta todos os dados do formulário
+            const colecaoId = getVal('colecao_id');
+            // Se colecaoId for "0" ou vazio, é um novo registro (adicionar_colecao.php)
+            const isNew = (colecaoId === "0" || colecaoId === "");
+            const endpoint = isNew ? 'inserir_album_action.php' : 'atualizar_album_action.php';
+
             const payload = {
-                colecao_id: getVal('colecao_id'),
+                colecao_id: colecaoId,
+                store_id: getVal('store_id'), // Importante para marcar como 'Adquirido' na loja
                 titulo: getVal('titulo'),
                 gravadora_id: getVal('gravadora_id'),
                 formato_id: getVal('formato_id'),
@@ -138,16 +135,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 generos: getSelectValues('generos'),
                 estilos: getSelectValues('estilos'),
                 produtores: getSelectValues('produtores'),
-                
-                // Coleta as faixas da tabela dinamicamente
                 tracks: Array.from(document.querySelectorAll('#tracklist-body tr')).map(row => ({
-                    titulo: row.querySelector('.editable-title') ? row.querySelector('.editable-title').textContent.trim() : '',
-                    duracao: row.querySelector('.editable-duration') ? row.querySelector('.editable-duration').textContent.trim() : ''
+                    titulo: row.querySelector('.editable-title')?.textContent.trim() || '',
+                    duracao: row.querySelector('.editable-duration')?.textContent.trim() || ''
                 }))
             };
 
-            if (!payload.colecao_id || !payload.titulo) {
-                alert("Erro: ID da coleção ou Título são obrigatórios!");
+            if (!payload.titulo) {
+                alert("O título do álbum é obrigatório!");
                 return;
             }
 
@@ -155,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btnSave.innerHTML = '<i class="fas fa-spinner fa-spin"></i> SALVANDO...';
 
             try {
-                const res = await fetch('atualizar_album_action.php', {
+                const res = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -163,17 +158,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const result = await res.json();
                 if(result.success) {
-                    alert("Jardim atualizado! Álbum salvo com sucesso.");
+                    alert(isNew ? "Álbum adicionado com sucesso!" : "Alterações salvas!");
                     window.location.href = 'colecao.php'; 
                 } else {
-                    alert("Erro ao salvar: " + result.error);
+                    alert("Erro ao processar: " + result.error);
                 }
             } catch (e) {
-                console.error("Erro no Fetch de salvamento:", e);
+                console.error("Erro Fetch:", e);
                 alert("Falha de comunicação com o servidor.");
             } finally {
                 btnSave.disabled = false;
-                btnSave.innerHTML = '<i class="fas fa-check-circle"></i> CONCLUIR E SALVAR ALTERAÇÕES';
+                btnSave.innerHTML = '<i class="fas fa-save"></i> SALVAR NA COLEÇÃO';
             }
         });
     }
