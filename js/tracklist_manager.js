@@ -1,128 +1,81 @@
-/**
- * SoundHaven - Tracklist Manager (Versão Consolidada)
- * Gerencia: Sincronização Discogs, Adição Manual, Remoção e Salvamento Inteligente (Insert/Update).
- */
+// --- TRACKLIST_MANAGER.JS
 
 document.addEventListener('DOMContentLoaded', () => {
+    const tracklistBody = document.getElementById('tracklist-body');
+    const getVal = (id) => document.getElementById(id)?.value || '';
+    
+    const getSelectValues = (id) => {
+        const el = document.getElementById(id);
+        if (!el) return [];
+        return $(el).val() || []; 
+    };
 
-    // --- 1. SINCRONIZAÇÃO COM O DISCOGS ---
-    const btnImport = document.getElementById('btn-import-discogs');
-    if (btnImport) {
-        btnImport.addEventListener('click', async () => {
-            const catNo = document.getElementById('numero_catalogo').value;
-            // No caso de inserção, o colecaoId pode ser 0, mas a API precisa do Catálogo
-            if (!catNo) {
-                alert("Por favor, digite o Número de Catálogo primeiro.");
-                return;
-            }
+    function inserirLinhaNaTabela(numero, titulo, duracao) {
+        if (!tracklistBody) return; 
+        const row = `
+            <tr>
+                <td>${numero}</td>
+                <td contenteditable="true" class="editable-title">${titulo}</td>
+                <td contenteditable="true" class="editable-duration">${duracao || ''}</td>
+                <td>
+                    <button type="button" class="btn-action secondary-action btn-sm remove-track">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>`;
+        tracklistBody.insertAdjacentHTML('beforeend', row);
+    }
 
-            btnImport.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando...';
-            btnImport.disabled = true;
+    // --- SINCRONIZAÇÃO DISCOGS (COM BUSCA REFINADA POR TÍTULO) ---
+    const btnSync = document.getElementById('btn-import-tracks');
+    if (btnSync) {
+        btnSync.addEventListener('click', async () => {
+            const catNo = getVal('numero_catalogo');
+            const tituloAlbum = getVal('titulo'); // Captura o título para ajudar no desempate
 
-            const formData = new FormData();
-            formData.append('numero_catalogo', catNo);
+            if (!catNo) { alert("Digite o Número de Catálogo."); return; }
+
+            btnSync.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btnSync.disabled = true;
 
             try {
                 const response = await fetch('importar_faixas_api.php', {
                     method: 'POST',
-                    body: formData
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        numero_catalogo: catNo,
+                        titulo: tituloAlbum 
+                    })
                 });
-
                 const data = await response.json();
-
                 if (data.success && data.tracklist) {
-                    if (confirm(`Encontramos: ${data.release_title}\nCarregar ${data.tracklist.length} faixas?`)) {
-                        const tbody = document.getElementById('tracklist-body');
-                        tbody.innerHTML = ''; 
-
-                        data.tracklist.forEach((track) => {
-                            const row = `
-                                <tr>
-                                    <td>${track.numero_faixa}</td>
-                                    <td contenteditable="true" class="editable-title">${track.titulo}</td>
-                                    <td contenteditable="true" class="editable-duration">${track.duracao || ''}</td>
-                                    <td>
-                                        <button type="button" class="btn-action secondary-action btn-sm remove-track">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </td>
-                                </tr>`;
-                            tbody.insertAdjacentHTML('beforeend', row);
-                        });
-                    }
+                    tracklistBody.innerHTML = '';
+                    data.tracklist.forEach(track => {
+                        inserirLinhaNaTabela(track.numero_faixa, track.titulo, track.duracao);
+                    });
                 } else {
-                    alert("Aviso: " + (data.message || "Álbum não encontrado no Discogs."));
+                    alert("Erro: " + (data.message || "Não encontrado."));
                 }
             } catch (error) {
-                console.error("Erro Discogs:", error);
-                alert("Erro ao conectar com a API de importação.");
+                alert("Falha na busca.");
             } finally {
-                btnImport.innerHTML = '<i class="fas fa-sync"></i> Sincronizar Discogs';
-                btnImport.disabled = false;
+                btnSync.innerHTML = '<i class="fas fa-sync"></i> Sincronizar';
+                btnSync.disabled = false;
             }
         });
     }
 
-    // --- 2. GESTÃO MANUAL DA TABELA (ADICIONAR/REMOVER) ---
-    const btnAddManual = document.getElementById('btn-add-manual');
-    if (btnAddManual) {
-        btnAddManual.addEventListener('click', () => {
-            const tbody = document.getElementById('tracklist-body');
-            const nextIndex = tbody.rows.length + 1;
-            const row = `
-                <tr>
-                    <td>${nextIndex}</td>
-                    <td contenteditable="true" class="editable-title">Nova Música</td>
-                    <td contenteditable="true" class="editable-duration">0:00</td>
-                    <td>
-                        <button type="button" class="btn-action secondary-action btn-sm remove-track">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>`;
-            tbody.insertAdjacentHTML('beforeend', row);
-        });
-    }
-
-    const tracklistBody = document.getElementById('tracklist-body');
-    if (tracklistBody) {
-        tracklistBody.addEventListener('click', (e) => {
-            const btnRemove = e.target.closest('.remove-track');
-            if (btnRemove) {
-                if (confirm('Remover esta faixa?')) {
-                    btnRemove.closest('tr').remove();
-                    reordenarFaixas();
-                }
-            }
-        });
-    }
-
-    function reordenarFaixas() {
-        const rows = document.querySelectorAll('#tracklist-body tr');
-        rows.forEach((row, index) => {
-            row.cells[0].textContent = index + 1;
-        });
-    }
-
-    // --- 3. SALVAMENTO (LOGICA DUPLA: INSERT OU UPDATE) ---
+    // --- SALVAMENTO ÚNICO E CENTRALIZADO ---
     const btnSave = document.getElementById('btn-save-full-album');
     if (btnSave) {
-        btnSave.addEventListener('click', async () => {
+        btnSave.addEventListener('click', async (e) => {
+            e.preventDefault();
             
-            const getVal = (id) => document.getElementById(id)?.value || '';
-            const getSelectValues = (id) => {
-                const el = document.getElementById(id);
-                return el ? Array.from(el.selectedOptions).map(o => o.value) : [];
-            };
-
-            const colecaoId = getVal('colecao_id');
-            // Se colecaoId for "0" ou vazio, é um novo registro (adicionar_colecao.php)
-            const isNew = (colecaoId === "0" || colecaoId === "");
-            const endpoint = isNew ? 'inserir_album_action.php' : 'atualizar_album_action.php';
+            // Trava de segurança para evitar múltiplos cliques
+            if (btnSave.disabled) return;
 
             const payload = {
-                colecao_id: colecaoId,
-                store_id: getVal('store_id'), // Importante para marcar como 'Adquirido' na loja
+                store_id: getVal('store_id'),
                 titulo: getVal('titulo'),
                 gravadora_id: getVal('gravadora_id'),
                 formato_id: getVal('formato_id'),
@@ -131,18 +84,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 data_aquisicao: getVal('data_aquisicao'),
                 preco: getVal('preco'),
                 observacoes: getVal('observacoes'),
+                capa_url: getVal('capa_url'),
                 artistas: getSelectValues('artistas'),
                 generos: getSelectValues('generos'),
                 estilos: getSelectValues('estilos'),
                 produtores: getSelectValues('produtores'),
-                tracks: Array.from(document.querySelectorAll('#tracklist-body tr')).map(row => ({
+                tracklist: Array.from(tracklistBody.querySelectorAll('tr')).map((row, index) => ({
+                    posicao: index + 1,
                     titulo: row.querySelector('.editable-title')?.textContent.trim() || '',
                     duracao: row.querySelector('.editable-duration')?.textContent.trim() || ''
                 }))
             };
 
-            if (!payload.titulo) {
-                alert("O título do álbum é obrigatório!");
+            if (!payload.titulo || payload.artistas.length === 0) {
+                alert("Título e Artista são obrigatórios!");
                 return;
             }
 
@@ -150,26 +105,38 @@ document.addEventListener('DOMContentLoaded', () => {
             btnSave.innerHTML = '<i class="fas fa-spinner fa-spin"></i> SALVANDO...';
 
             try {
-                const res = await fetch(endpoint, {
+                const res = await fetch('inserir_album_action.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                
                 const result = await res.json();
                 if(result.success) {
-                    alert(isNew ? "Álbum adicionado com sucesso!" : "Alterações salvas!");
-                    window.location.href = 'colecao.php'; 
+                    alert("Salvo com sucesso!");
+                    window.location.href = 'colecao.php';
                 } else {
-                    alert("Erro ao processar: " + result.error);
+                    alert("Erro ao salvar: " + result.error);
+                    btnSave.disabled = false;
+                    btnSave.innerHTML = '<i class="fas fa-save"></i> SALVAR NA COLEÇÃO';
                 }
             } catch (e) {
-                console.error("Erro Fetch:", e);
-                alert("Falha de comunicação com o servidor.");
-            } finally {
+                alert("Erro de conexão com o servidor.");
                 btnSave.disabled = false;
                 btnSave.innerHTML = '<i class="fas fa-save"></i> SALVAR NA COLEÇÃO';
             }
         });
     }
+
+    // Adição Manual e Remoção
+    document.getElementById('btn-add-manual')?.addEventListener('click', () => {
+        inserirLinhaNaTabela(tracklistBody.rows.length + 1, 'Nova Música', '0:00');
+    });
+
+    tracklistBody?.addEventListener('click', (e) => {
+        const btn = e.target.closest('.remove-track');
+        if (btn && confirm('Remover faixa?')) {
+            btn.closest('tr').remove();
+            Array.from(tracklistBody.rows).forEach((r, i) => r.cells[0].textContent = i + 1);
+        }
+    });
 });

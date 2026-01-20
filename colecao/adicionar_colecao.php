@@ -1,7 +1,7 @@
 <?php
-require_once '../db/conexao.php';
+require_once '../src/config/config.php';
 /** @var PDO $pdo */
-require_once '../funcoes.php';
+require_once '../src/functions/funcoes.php';
 
 // Captura dados vindos da Loja (se houver)
 $from_store_id = filter_input(INPUT_GET, 'from_store', FILTER_VALIDATE_INT);
@@ -15,8 +15,8 @@ $data_lanc     = filter_input(INPUT_GET, 'data_lanc', FILTER_DEFAULT) ?? '';
 $artistas = $pdo->query("SELECT id, nome FROM artistas ORDER BY nome ASC")->fetchAll(PDO::FETCH_ASSOC);
 $gravadoras = $pdo->query("SELECT id, nome FROM gravadoras ORDER BY nome ASC")->fetchAll(PDO::FETCH_ASSOC);
 $formatos = $pdo->query("SELECT id, descricao FROM formatos ORDER BY descricao ASC")->fetchAll(PDO::FETCH_ASSOC);
-$generos = $pdo->query("SELECT id, nome FROM generos ORDER BY nome ASC")->fetchAll(PDO::FETCH_ASSOC);
-$estilos = $pdo->query("SELECT id, nome FROM estilos ORDER BY nome ASC")->fetchAll(PDO::FETCH_ASSOC);
+$generos = $pdo->query("SELECT id, descricao AS nome FROM generos ORDER BY descricao ASC")->fetchAll(PDO::FETCH_ASSOC);
+$estilos = $pdo->query("SELECT id, descricao AS nome FROM estilos ORDER BY descricao ASC")->fetchAll(PDO::FETCH_ASSOC);
 $produtores = $pdo->query("SELECT id, nome FROM produtores ORDER BY nome ASC")->fetchAll(PDO::FETCH_ASSOC);
 
 require_once '../include/header.php';
@@ -32,7 +32,20 @@ require_once '../include/header.php';
         </div>
 
         <form id="form-colecao" class="colecao-form">
-            <input type="hidden" id="colecao_id" value="0"> <input type="hidden" id="store_id" value="<?php echo $from_store_id; ?>">
+            <input type="hidden" id="colecao_id" value="0"> 
+            <input type="hidden" id="store_id" value="<?php echo $from_store_id; ?>">
+            <div class="form-group full-width" style="margin-bottom: 20px;">
+                <label>URL da Capa do Álbum</label>
+                <div style="display: flex; gap: 15px; align-items: flex-start;">
+                    <div style="flex-grow: 1;">
+                        <input type="text" id="capa_url" value="<?php echo htmlspecialchars($capa_url); ?>" placeholder="Cole aqui a URL da imagem em alta resolução">
+                        <small style="color: #666;">Dica: Você pode trocar a capa vinda da loja por uma melhor.</small>
+                    </div>
+                    <div id="preview-container" style="width: 100px; height: 100px; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; background: #f9f9f9;">
+                        <img id="img-preview" src="<?php echo $capa_url ?: '../assets/img/default-cover.png'; ?>" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                </div>
+            </div>
 
             <div class="form-grid">
                 <div class="form-group full-width">
@@ -77,7 +90,7 @@ require_once '../include/header.php';
                     <label>Número de Catálogo</label>
                     <div class="input-with-button">
                         <input type="text" id="numero_catalogo" placeholder="Ex: 6328 151">
-                        <button type="button" id="btn-import-discogs" class="btn-action primary-action">
+                        <button type="button" id="btn-import-tracks" class="btn-action primary-action">
                             <i class="fas fa-sync"></i> Sincronizar
                         </button>
                     </div>
@@ -118,6 +131,17 @@ require_once '../include/header.php';
                 </div>
             </div>
 
+            <div class="form-group full-width" style="margin-top: 20px;">
+                <label>Produtor(es)</label>
+                <select id="produtores" multiple="multiple" class="select2-tags">
+                    <?php foreach ($produtores as $prod): ?>
+                        <option value="<?= $prod['id'] ?>">
+                            <?= htmlspecialchars($prod['nome']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
             <div class="tracklist-section" style="margin-top: 30px;">
                 <div class="section-header">
                     <h3><i class="fas fa-list"></i> Lista de Faixas</h3>
@@ -153,12 +177,11 @@ require_once '../include/header.php';
     </div>
 </div>
 
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <script src="../js/tracklist_manager.js"></script>
-<script>
-$(document).ready(function() {
-    $('.select2-artistas').select2({ placeholder: "Selecione o(s) artista(s)" });
-    $('.select2-tags').select2({ placeholder: "Selecione as opções" });
-});
-</script>
+<script src="../js/colecao_form.js"></script>
 
 <?php require_once '../include/footer.php'; ?>

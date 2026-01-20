@@ -1,47 +1,32 @@
 <?php
-// Arquivo: dashboard.php (Controller e View - CORRIGIDO PDO INJECTION)
+// Arquivo: dashboard.php (Controller e View - INTEGRADO COM MODAL)
 
 session_start();
 
 // 1. CARREGAR O AMBIENTE E VERIFICAR LOGIN
-// ----------------------------------------------------
-// Carrega o .env E CRIA A CONEXÃO $pdo
-// ATENÇÃO: Verifique o caminho. Se dashboard.php está na raiz, o caminho abaixo está correto.
-require_once 'src/config/config.php'; 
-// Inclui o Model
+require_once 'src/config/config.php';
+/** @var PDO $pdo */
 require_once 'src/Model/AlbumModel.php'; 
 
-// Verifica se o usuário está logado (SEGURANÇA!)
 if (!isset($_SESSION['user_id'])) {
     header('Location: index.php'); 
     exit();
 }
 
-// ----------------------------------------------------
 // 2. LÓGICA (Controller) - BUSCA DE DADOS
-// ----------------------------------------------------
-
 $userId = $_SESSION['user_id']; 
-
-// Instancia o Model para buscar os dados
-// CORRIGIDO: Agora, passamos a variável $pdo (criada em config.php) para o construtor.
 $albumModel = new AlbumModel($pdo); 
-
-// Busca os dados do Dashboard
 $stats = $albumModel->getDashboardStats($userId);
 
-// Atribuição de variáveis (para manter a compatibilidade com o HTML existente)
 $erro_db = $stats['erro_db'] ?? '';
 $total_albuns = $stats['count_total'] ?? 0;
 $total_lps = $stats['count_lp'] ?? 0;
 $total_cds = $stats['count_cd'] ?? 0;
-$total_cdrs = $stats['count_cdr'] ?? 0; // NOVO CARD
+$total_cdrs = $stats['count_cdr'] ?? 0;
 $total_k7 = $stats['count_k7'] ?? 0;
 $total_digital = $stats['count_digital'] ?? 0;
 $total_video = ($stats['count_dvd'] ?? 0) + ($stats['count_bluray'] ?? 0);
 $total_artistas = $stats['count_artistas'] ?? 0;
-
-// (Manter estes em zero até implementarmos as queries no Model)
 $total_generos = $stats['total_generos'] ?? 0;
 $total_gravadoras = $stats['total_gravadoras'] ?? 0;
 
@@ -52,12 +37,6 @@ $anos_cobertos = $stats['years_span'] ?? 1;
 $aniversariantes = $stats['aniversariantes'] ?? [];
 $ultimos_albuns = $stats['ultimos_albuns'] ?? [];
 
-
-// ----------------------------------------------------
-// 3. APRESENTAÇÃO (View)
-// ----------------------------------------------------
-
-// Inclui o Cabeçalho
 require_once 'include/header.php'; 
 ?>
 
@@ -74,30 +53,21 @@ require_once 'include/header.php';
 </div>
 
 <div class="metric-grid container" style="padding-top: 0px;">
-    
     <a href="colecao/colecao.php" style="text-decoration: none; color: inherit;">
         <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_albuns; ?></div><div class="metric-label">Álbuns</div></div><div class="icon-container cor-1"><i class="fas fa-compact-disc"></i></div></div></div>
     </a>
-    
     <a href="colecao/colecao.php?formato=LP" style="text-decoration: none; color: inherit;">
         <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_lps; ?></div><div class="metric-label">LPs (Vinyl)</div></div><div class="icon-container cor-2"><i class="fas fa-record-vinyl"></i></div></div></div>
     </a>
-    
     <a href="colecao/colecao.php?formato=CD" style="text-decoration: none; color: inherit;">
         <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_cds; ?></div><div class="metric-label">CD's</div></div><div class="icon-container cor-3"><i class="fas fa-compact-disc"></i></div></div></div>
     </a>
-    
     <a href="colecao/colecao.php?formato=CD-R" style="text-decoration: none; color: inherit;">
         <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_cdrs; ?></div><div class="metric-label">CD-R's</div></div><div class="icon-container cor-7"><i class="fas fa-compact-disc"></i></div></div></div>
     </a>
-    
     <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_artistas; ?></div><div class="metric-label">Artistas</div></div><div class="icon-container cor-5"><i class="fas fa-users"></i></div></div></div>
-
-    <!---<div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_generos; ?></div><div class="metric-label">Gêneros Únicos</div></div><div class="icon-container cor-4"><i class="fas fa-chart-line"></i></div></div></div> -->
-    
     <div class="card metric-card"><div class="metric-card-content"><div><div class="metric-value"><?php echo $total_gravadoras; ?></div><div class="metric-label">Gravadoras</div></div><div class="icon-container cor-6"><i class="fas fa-building"></i></div></div></div>
-    
-    </div>
+</div>
 
 <div class="span-card-container container" style="padding-top: 0px;">
     <div class="span-card card">
@@ -108,7 +78,6 @@ require_once 'include/header.php';
                 <div class="span-years-range">Lançamentos entre <?php echo $ano_min; ?> e <?php echo $ano_max; ?></div>
             </div>
         </div>
-        
         <div class="span-value-area">
             <div class="years-value"><?php echo $anos_cobertos; ?></div>
             <div class="years-label">Anos Cobertos</div>
@@ -120,13 +89,11 @@ require_once 'include/header.php';
 <div class="anniversary-section container" style="padding-top: 10px;">
     <div class="card anniversary-card">
         <div class="card-header">
-            <h2 class="anniversary-title">
-                <i class="fas fa-calendar-alt"></i> Aniversariantes de Hoje
-            </h2>
+            <h2 class="anniversary-title"><i class="fas fa-calendar-alt"></i> Aniversariantes de Hoje</h2>
         </div>
         <div class="card-content space-y-4">
             <?php foreach ($aniversariantes as $album): ?>
-                <a href="/colecao/detalhes_colecao.php?id=<?php echo $album['id']; ?>" class="anniversary-album-item">
+                <div class="anniversary-album-item open-modal" data-album-id="<?php echo $album['id']; ?>" data-ativo="1" style="cursor:pointer;">
                     <div class="album-cover-sm">
                         <?php if ($album['capa_url']): ?>
                             <img src="<?php echo htmlspecialchars($album['capa_url']); ?>" alt="Capa" class="w-full h-full object-cover rounded-lg">
@@ -136,9 +103,7 @@ require_once 'include/header.php';
                     </div>
                     <div class="flex-1 min-w-0">
                         <h4 class="font-semibold text-white truncate"><?php echo htmlspecialchars($album['titulo']); ?></h4>
-                        <p class="text-sm text-gray-400 truncate">
-                            <?php echo htmlspecialchars($album['artista_nome']); ?>
-                        </p>
+                        <p class="text-sm text-gray-400 truncate"><?php echo htmlspecialchars($album['artista_nome']); ?></p>
                         <div class="flex flex-wrap gap-3 mt-1">
                             <?php foreach ($album['aniversario_info'] as $info): 
                                 $icone = ($info['type'] === 'release') ? 'fas fa-compact-disc' : 'fas fa-gift'; 
@@ -150,105 +115,105 @@ require_once 'include/header.php';
                             <?php endforeach; ?>
                         </div>
                     </div>
-                </a>
+                </div>
             <?php endforeach; ?>
         </div>
     </div>
 </div>
 <?php endif; ?>
 
-
 <div class="recent-albums-section container" style="padding-top: 0px;">
     <h2 class="recent-albums-title">Últimas Aquisições</h2>
-
     <?php if (!empty($ultimos_albuns)): ?>
         <div class="recent-albums-grid">
             <?php foreach ($ultimos_albuns as $album): ?>
-                
-                <a href="/colecao/detalhes_colecao.php?id=<?php echo $album['id']; ?>" 
-                    class="card album-card-modern group">
+                <div class="card album-card-modern group open-modal" 
+                     data-album-id="<?php echo $album['id']; ?>" 
+                     data-ativo="1" 
+                     style="cursor: pointer;">
                     
-                    <button 
-                        type="button" 
-                        class="btn-edit-album"
-                        title="Editar Álbum"
-                        onclick="event.stopPropagation(); window.location.href='/colecao/editar_colecao.php?id=<?php echo $album['id']; ?>';"
-                    >
-                        <i class="fas fa-edit"></i> </button>
+                    <button type="button" class="btn-edit-album" title="Editar Álbum" onclick="event.stopPropagation(); window.location.href='/colecao/editar_colecao.php?id=<?php echo $album['id']; ?>';">
+                        <i class="fas fa-edit"></i> 
+                    </button>
 
                     <div class="album-cover-area">
                         <?php if ($album['capa_url']): ?>
-                            <img 
-                                src="<?php echo htmlspecialchars($album['capa_url']); ?>" 
-                                alt="Capa do Álbum <?php echo htmlspecialchars($album['titulo']); ?>"
-                                class="album-image"
-                            >
+                            <img src="<?php echo htmlspecialchars($album['capa_url']); ?>" alt="Capa" class="album-image">
                         <?php else: ?>
-                            <div class="album-placeholder">
-                                <i class="fas fa-music"></i>
-                            </div>
+                            <div class="album-placeholder"><i class="fas fa-music"></i></div>
                         <?php endif; ?>
                         
-                            <span class="album-format-tag <?php 
-                                $formato = strtolower($album['formato_descricao'] ?? '');
-                                                            
-                                if (str_contains($formato, 'lp') || str_contains($formato, 'vinyl')) {
-                                    echo 'tag-vinyl'; 
-                                } elseif (str_contains($formato, 'cd-r')) {
-                                    echo 'tag-cdr'; 
-                                } elseif (str_contains($formato, 'digital') || str_contains($formato, 'dig')) {
-                                    echo 'tag-dig'; // Preparado para o futuro
-                                } else {
-                                    echo 'tag-cd'; 
-                                }
-                            ?>">
-                                <?php echo htmlspecialchars($album['formato_descricao'] ?? '-'); ?>
-                            </span>
+                        <span class="album-format-tag <?php 
+                            $formato = strtolower($album['formato_descricao'] ?? '');
+                            if (str_contains($formato, 'lp') || str_contains($formato, 'vinyl')) echo 'tag-vinyl'; 
+                            elseif (str_contains($formato, 'cd-r')) echo 'tag-cdr'; 
+                            elseif (str_contains($formato, 'digital')) echo 'tag-dig'; 
+                            else echo 'tag-cd'; 
+                        ?>">
+                            <?php echo htmlspecialchars($album['formato_descricao'] ?? '-'); ?>
+                        </span>
                     </div>
                     
                     <div class="album-details-content">
                         <h3 class="album-title-h3" title="<?php echo htmlspecialchars($album['titulo']); ?>">
                             <?php echo htmlspecialchars($album['titulo']); ?>
                         </h3>
-                        
                         <div class="album-info-line artist-line">
-                            <i class="fas fa-user"></i> 
-                            <span title="<?php echo htmlspecialchars($album['artista_nome'] ?? 'Artista Desconhecido'); ?>">
-                                <?php echo htmlspecialchars($album['artista_nome'] ?? 'Artista Desconhecido'); ?>
-                            </span>
+                            <i class="fas fa-user"></i> <span><?php echo htmlspecialchars($album['artista_nome'] ?? 'Artista Desconhecido'); ?></span>
                         </div>
-                        
                         <div class="album-info-line label-line">
-                            <i class="fas fa-building"></i>
-                            <span title="<?php echo htmlspecialchars($album['gravadora_nome'] ?? '-'); ?>">
-                                <?php echo htmlspecialchars($album['gravadora_nome'] ?? '-'); ?>
-                            </span>
+                            <i class="fas fa-building"></i> <span><?php echo htmlspecialchars($album['gravadora_nome'] ?? '-'); ?></span>
                         </div>
-                        
                         <div class="album-info-line year-genre-line">
                             <div class="flex items-center">
-                                <i class="fas fa-calendar-alt"></i>
-                                <span><?php echo htmlspecialchars($album['ano_lancamento']); ?></span>
+                                <i class="fas fa-calendar-alt"></i> <span><?php echo htmlspecialchars($album['ano_lancamento']); ?></span>
                             </div>
-                            <span class="genre-tag">
-                                <?php echo htmlspecialchars($album['genero_nome'] ?? 'Não Definido'); ?>
-                            </span>
+                            <span class="genre-tag"><?php echo htmlspecialchars($album['genero_nome'] ?? 'Não Definido'); ?></span>
                         </div>
-                        
-                        <?php if (!empty($album['numero_catalogo'])): ?>
-                            <div class="album-info-line catalog-line">
-                                <i class="fas fa-compact-disc"></i>
-                                <span><?php echo htmlspecialchars($album['numero_catalogo']); ?></span>
-                            </div>
-                        <?php endif; ?>
                     </div>
-                </a>
+                </div>
             <?php endforeach; ?>
         </div>
     <?php else: ?>
-        <p class="no-albums-message">Ainda não há álbuns na coleção para exibir no dashboard. <a href="/colecao/adicionar_colecao.php">Adicione o seu primeiro!</a></p>
+        <p class="no-albums-message">Ainda não há álbuns na coleção. <a href="/colecao/adicionar_colecao.php">Adicione o seu primeiro!</a></p>
     <?php endif; ?>
+</div>
 
-</div> 
+<div id="albumModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <span class="modal-close">&times;</span>
+        <div id="modal-loader" style="display: none; text-align: center; padding: 50px;">
+            <i class="fas fa-circle-notch fa-spin" style="font-size: 3em; color: var(--cor-destaque);"></i>
+        </div>
+        <div id="modal-details" style="display: none;">
+            <div class="modal-grid" style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 250px;">
+                    <img id="modal-capa-img" src="" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+                    <div id="modal-relacionamentos" style="margin-top: 15px; font-size: 0.9em;"></div>
+                </div>
+                <div style="flex: 2; min-width: 300px;">
+                    <h2 id="modal-titulo" style="color: var(--cor-destaque); margin-bottom: 5px;"></h2>
+                    <p id="modal-artistas" style="font-size: 1.2em; font-weight: bold; margin-bottom: 15px;"></p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9em; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 5px;">
+                        <span><strong>Lançamento:</strong> <span id="modal-lancamento"></span></span>
+                        <span><strong>Gravadora:</strong> <span id="modal-gravadora"></span></span>
+                        <span><strong>Catálogo:</strong> <span id="modal-catalogo"></span></span>
+                        <span><strong>Formato:</strong> <span id="modal-formato"></span></span>
+                        <span><strong>Preço:</strong> <span id="modal-preco"></span></span>
+                        <span><strong>Condição:</strong> <span id="modal-condicao"></span></span>
+                    </div>
+                    <div style="margin-top: 20px;">
+                        <h3 style="border-bottom: 1px solid var(--cor-borda); padding-bottom: 5px;">Faixas</h3>
+                        <div id="import-message-area">
+                            <ul id="tracklist-ul" style="list-style: none; padding: 0; margin-top: 10px;"></ul>
+                        </div>
+                        <div id="manual-edit-controls" style="display:none;"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="modal-actions" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--cor-borda); text-align: right;"></div>
+        </div>
+    </div>
+</div>
 
 <?php require_once 'include/footer.php'; ?>

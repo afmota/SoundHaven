@@ -89,7 +89,7 @@
 
 .tag-vinyl { background-color: rgba(230, 126, 34, 0.95) !important; color: #fff; } /* Laranja escuro */
 .tag-cd    { background-color: rgba(52, 152, 219, 0.95) !important; color: #fff; } /* Azul */
-.tag-cdr   { background-color: rgba(246, 149, 59, 0.95) !important; color: #fff; } /* Laranja vibrante */
+.tag-cdr   { background-color: rgba(192, 59, 59, 0.95) !important; color: #fff; } /* Laranja vibrante */
 .tag-dig   { background-color: rgba(46, 204, 113, 0.95) !important; color: #fff; } /* Verde (Digital) */
 
 

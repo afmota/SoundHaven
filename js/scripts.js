@@ -7,10 +7,10 @@ $(document).ready(function() {
     let importData = {}; 
     
     // Configurações e URLs
-    const editUrlBase = 'editar_colecao.php?id=';
-    const deleteUrlBase = 'excluir_colecao.php?id=';
-    const restoreUrlBase = 'restaurar_colecao.php?id='; 
-    const fetchUrlBase = 'fetch_album_details.php?id=';
+    const editUrlBase = '/colecao/editar_colecao.php?id=';
+    const deleteUrlBase = '/colecao/excluir_colecao.php?id=';
+    const restoreUrlBase = '/colecao/restaurar_colecao.php?id='; 
+    const fetchUrlBase = '/colecao/fetch_album_details.php?id=';
     
     const $modal = $('#albumModal');
     const $modalContent = $modal.find('.modal-content');
@@ -165,7 +165,7 @@ $(document).ready(function() {
     // =========================================================================
     // 1. ABERTURA DO MODAL (EVENTO DELEGADO)
     // =========================================================================
-    $(document).on('click', '.colecao-item-card.open-modal', async function(e) {
+    $(document).on('click', '.open-modal', async function(e) {
         
         closeModal(); // Limpa e fecha o anterior
         
@@ -192,8 +192,10 @@ $(document).ready(function() {
                 const artistas = album.relacionamentos.artistas ? album.relacionamentos.artistas.join(', ') : 'N/A';
                 $('#modal-artistas').text(artistas);
                 
-                $('#modal-lancamento').text('Lançamento: ' + album.data_lancamento_formatada);
-                $('#modal-gravadora').text('Gravadora: ' + (album.gravadora_nome || 'N/A'));
+                // Usamos || para que, se um campo estiver vazio, ele tente o outro ou mostre 'N/A'
+                const dataLancamento = album.data_lancamento_pt || album.data_lancamento || 'N/A';
+                $('#modal-lancamento').text(dataLancamento);
+                $('#modal-gravadora').text(album.gravadora_nome || 'N/A');
 
                 $('#modal-formato').text(album.formato_descricao || 'N/A');
                 $('#modal-aquisicao').text(album.data_aquisicao_formatada || 'N/A');
@@ -242,25 +244,24 @@ $(document).ready(function() {
                 
                 if (albumAtivo == 1) { // Item ATIVO
                     
-                    let importButtonHtml = '';
-                    if (catalogo && catalogo.trim() !== '' && catalogo.trim() !== 'N/A') {
-                        
-                        // Passando o ID da Coleção (albumId), Catálogo (catalogo) e TÍTULO (album.titulo)
-                        importButtonHtml = `
-                            <button id="btn-importar-faixas" class="action-icon" 
-                                data-colecao-id="${albumId}" 
-                                data-catalogo="${catalogo}" 
-                                data-titulo="${album.titulo}" 
-                                style="background-color: var(--cor-destaque); color: var(--cor-fundo-card); margin-right: 10px; border: none; cursor: pointer; padding: 8px 15px; border-radius: 4px; font-weight: bold;">
-                                <i class="fas fa-music"></i> Importar Faixas (Discogs)
-                            </button>
-                        `;
-                    } else {
-                        importButtonHtml = `<span style="color: var(--cor-texto-secundario); margin-right: 10px;">Preencha o Nº Catálogo para importar faixas.</span>`;
-                    }
+                    // let importButtonHtml = '';
+                    // if (catalogo && catalogo.trim() !== '' && catalogo.trim() !== 'N/A') {
+                    //     
+                    //     // Passando o ID da Coleção (albumId), Catálogo (catalogo) e TÍTULO (album.titulo)
+                    //     importButtonHtml = `
+                    //         <button id="btn-importar-faixas" class="action-icon" 
+                    //             data-colecao-id="${albumId}" 
+                    //             data-catalogo="${catalogo}" 
+                    //             data-titulo="${album.titulo}" 
+                    //             style="background-color: var(--cor-destaque); color: var(--cor-fundo-card); margin-right: 10px; border: none; cursor: pointer; padding: 8px 15px; border-radius: 4px; font-weight: bold;">
+                    //             <i class="fas fa-music"></i> Importar Faixas (Discogs)
+                    //         </button>
+                    //     `;
+                    // } else {
+                    //     importButtonHtml = `<span style="color: var(--cor-texto-secundario); margin-right: 10px;">Preencha o Nº Catálogo para importar faixas.</span>`;
+                    // }
 
                     $actionsDiv.html(`
-                        ${importButtonHtml}
                         <a href="${editUrlBase + albumId}" class="edit action-icon"><i class="fa fa-pencil-alt"></i> Editar</a>
                         <a href="${deleteUrlBase + albumId}" class="delete action-icon"
                             onclick="return confirm('Tem certeza que deseja REMOVER (Exclusão Lógica) este item da sua coleção?');">

@@ -120,7 +120,7 @@ class StoreModel {
      */
     public function getDetalhes(int $id): array|false {
         $sql = "SELECT 
-                    s.id, s.titulo, s.data_lancamento, s.criado_em, s.atualizado_em, s.capa_url,
+                    s.id, s.titulo, s.artista_id, s.data_lancamento, s.criado_em, s.atualizado_em, s.capa_url,
                     a.nome AS nome_artista,
                     ta.descricao AS descricao_tipo,
                     st.descricao AS descricao_situacao,

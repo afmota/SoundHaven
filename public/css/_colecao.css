@@ -648,7 +648,7 @@
 
 .tag-vinyl { background: rgba(230, 126, 34, 0.9); color: #fff; }
 .tag-cd { background: rgba(52, 152, 219, 0.9); color: #fff; }
-.tag-cdr { background-color: #f6953b; color: #fff; }
+.tag-cdr { background-color: #b13131; color: #fff; }
 
 /* Detalhes do Texto */
 .card-details-main {
@@ -902,3 +902,81 @@ input:focus, select:focus {
     opacity: 1;
     transform: scale(1.2);
 }
+
+/* ========================================== */
+/* CUSTOM SELECT2 DARK MODE (STYLING)         */
+/* ========================================== */
+/* Limpeza total do Select2 para Dark Mode */
+
+/* 1. Container Principal */
+.select2-container--default .select2-selection--multiple {
+    background-color: #1a1a1a !important;
+    border: 1px solid #333 !important;
+    border-radius: 6px !important;
+    padding: 4px !important;
+    min-height: 42px !important;
+}
+
+/* 2. As Tags (Itens Selecionados) - Estilo "Pill" moderno */
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: #2c2c2c !important; /* Fundo sóbrio */
+    border: 1px solid #444 !important;
+    color: #00d4ff !important; /* Texto na cor destaque */
+    border-radius: 4px !important;
+    padding: 3px 10px !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    margin-right: 5px !important;
+}
+
+/* Botão de fechar (X) da Tag */
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: #aaa6a6 !important;
+    border-right: none !important;
+    margin-right: 8px !important;
+    font-weight: bold !important;
+}
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+    background: transparent !important;
+    color: #ff0000 !important;
+}
+
+/* 3. Dropdown (A lista que abre) */
+.select2-dropdown {
+    background-color: #1a1a1a !important;
+    border: 1px solid #333 !important;
+    border-top: none !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8) !important;
+}
+
+/* 4. Itens da Lista */
+.select2-results__option {
+    background-color: #1a1a1a !important;
+    color: #bbb !important;
+    padding: 10px 15px !important;
+    font-size: 0.9rem !important;
+}
+
+/* Item focado/passando o mouse */
+.select2-results__option--highlighted[aria-selected] {
+    background-color: #00d4ff !important;
+    color: #000 !important; /* Inverte para contraste */
+}
+
+/* Item já selecionado */
+.select2-results__option[aria-selected=true] {
+    background-color: #252525 !important;
+    color: #555 !important;
+}
+
+/* 5. Campo de busca dentro do Select */
+.select2-search--inline .select2-search__field {
+    color: #fff !important;
+    margin-top: 7px !important;
+}
+
+.select2-search__field {
+    background: transparent !important; /* Fica da cor do fundo do select */
+    border: none !important;
+}
+

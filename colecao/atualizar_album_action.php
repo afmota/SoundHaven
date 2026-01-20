@@ -3,76 +3,92 @@ require_once '../src/config/config.php';
 /** @var PDO $pdo */
 header('Content-Type: application/json');
 
-// Recebe o JSON enviado pelo fetch
-$data = json_decode(file_get_contents('php://input'), true);
+// 1. Recebe e decodifica o JSON
+$input = file_get_contents('php://input');
+$data = json_decode($input, true);
 
-if (!$data || !isset($data['colecao_id'])) {
-    echo json_encode(['success' => false, 'error' => 'Dados inválidos ou ID ausente.']);
+// 2. Validação básica do ID
+$id_album = isset($data['colecao_id']) ? (int)$data['colecao_id'] : 0;
+
+if ($id_album <= 0) {
+    echo json_encode(['success' => false, 'error' => 'ID do álbum inválido ou não recebido pelo servidor.']);
     exit;
 }
 
 try {
     $pdo->beginTransaction();
 
-    // 1. Update na Tabela Coleção (Dados Principais)
-    $stmt = $pdo->prepare("UPDATE colecao SET 
-        titulo = ?, 
-        gravadora_id = ?, 
-        formato_id = ?, 
-        numero_catalogo = ?, 
-        data_lancamento = ?, 
-        data_aquisicao = ?, 
-        preco = ?, 
-        observacoes = ?, 
-        atualizado_em = NOW() 
-        WHERE id = ?");
-    
-    // Tratamento de preço: remove "R$", troca vírgula por ponto e limpa espaços
-    $preco_limpo = str_replace(['R$', ' ', '.'], '', $data['preco']);
-    $preco_formatado = str_replace(',', '.', $preco_limpo);
+    // 3. Tratamento de preço (Converte 1.250,00 ou R$ 50,00 para 1250.00)
+    $preco_raw = $data['preco'] ?? '0';
+    $preco_limpo = str_replace(['R$', ' ', '.'], '', $preco_raw);
+    $preco_final = (float)str_replace(',', '.', $preco_limpo);
 
+    // 4. Update na Tabela Principal (colecao)
+    $sql_main = "UPDATE colecao SET 
+                    titulo = ?, 
+                    capa_url = ?,
+                    gravadora_id = ?, 
+                    formato_id = ?, 
+                    numero_catalogo = ?, 
+                    data_lancamento = ?, 
+                    data_aquisicao = ?, 
+                    preco = ?, 
+                    observacoes = ?, 
+                    atualizado_em = NOW() 
+                WHERE id = ?";
+    
+    $stmt = $pdo->prepare($sql_main);
     $stmt->execute([
-        $data['titulo'], 
-        $data['gravadora_id'] ?: null, 
+        $data['titulo'],
+        $data['capa_url'] ?? null,
+        $data['gravadora_id'] ?: null,
         $data['formato_id'] ?: null,
-        $data['numero_catalogo'] ?? '', 
-        $data['data_lancamento'] ?: null, 
-        $data['data_aquisicao'] ?: null, 
-        $preco_formatado ?: 0, 
-        $data['observacoes'] ?? '', 
-        $data['colecao_id']
+        $data['numero_catalogo'] ?? '',
+        $data['data_lancamento'] ?: null,
+        $data['data_aquisicao'] ?: null,
+        $preco_final,
+        $data['observacoes'] ?? '',
+        $id_album
     ]);
 
-    // 2. Função para sincronizar tabelas M:N (Melhorada com verificação de array)
-    function sync($pdo, $table, $column, $ids, $colecao_id) {
-        $pdo->prepare("DELETE FROM $table WHERE colecao_id = ?")->execute([$colecao_id]);
-        if (is_array($ids) && !empty($ids)) {
+    // 5. Função de Sincronização para tabelas M:N
+    // Ela usa o $id_album que validamos ser um inteiro existente
+    function syncRelations($pdo, $table, $column, $list, $id_pai) {
+        // Remove relações antigas
+        $del = $pdo->prepare("DELETE FROM $table WHERE colecao_id = ?");
+        $del->execute([$id_pai]);
+
+        // Insere as novas
+        if (is_array($list) && !empty($list)) {
             $ins = $pdo->prepare("INSERT INTO $table (colecao_id, $column) VALUES (?, ?)");
-            foreach ($ids as $id) {
-                if (!empty($id)) $ins->execute([$colecao_id, $id]);
+            foreach ($list as $item_id) {
+                if (!empty($item_id)) {
+                    $ins->execute([$id_pai, (int)$item_id]);
+                }
             }
         }
     }
 
-    // Sincronização das tabelas auxiliares
-    sync($pdo, 'colecao_artista', 'artista_id', $data['artistas'] ?? [], $data['colecao_id']);
-    sync($pdo, 'colecao_genero', 'genero_id', $data['generos'] ?? [], $data['colecao_id']);
-    sync($pdo, 'colecao_estilo', 'estilo_id', $data['estilos'] ?? [], $data['colecao_id']);
-    sync($pdo, 'colecao_produtor', 'produtor_id', $data['produtores'] ?? [], $data['colecao_id']);
+    // Executa sincronização para todas as tabelas auxiliares
+    syncRelations($pdo, 'colecao_artista', 'artista_id', $data['artistas'] ?? [], $id_album);
+    syncRelations($pdo, 'colecao_genero', 'genero_id', $data['generos'] ?? [], $id_album);
+    syncRelations($pdo, 'colecao_estilo', 'estilo_id', $data['estilos'] ?? [], $id_album);
+    syncRelations($pdo, 'colecao_produtor', 'produtor_id', $data['produtores'] ?? [], $id_album);
 
-    // 3. Tracklist (Delete e Insert)
-    $pdo->prepare("DELETE FROM colecao_faixas WHERE colecao_id = ?")->execute([$data['colecao_id']]);
-    
+    // 6. Atualização da Tracklist (colecao_faixas)
+    $del_faixas = $pdo->prepare("DELETE FROM colecao_faixas WHERE colecao_id = ?");
+    $del_faixas->execute([$id_album]);
+
     if (isset($data['tracks']) && is_array($data['tracks'])) {
-        $stmt_f = $pdo->prepare("INSERT INTO colecao_faixas (colecao_id, numero_faixa, titulo, duracao) VALUES (?, ?, ?, ?)");
-        foreach ($data['tracks'] as $i => $t) {
-            // Só insere se o título não estiver vazio
-            if (!empty($t['titulo'])) {
+        $sql_faixa = "INSERT INTO colecao_faixas (colecao_id, numero_faixa, titulo, duracao) VALUES (?, ?, ?, ?)";
+        $stmt_f = $pdo->prepare($sql_faixa);
+        foreach ($data['tracks'] as $idx => $track) {
+            if (!empty($track['titulo'])) {
                 $stmt_f->execute([
-                    $data['colecao_id'], 
-                    $i + 1, 
-                    $t['titulo'], 
-                    $t['duracao'] ?? ''
+                    $id_album,
+                    $idx + 1,
+                    $track['titulo'],
+                    $track['duracao'] ?? ''
                 ]);
             }
         }
@@ -85,5 +101,5 @@ try {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    echo json_encode(['success' => false, 'error' => "Erro no banco: " . $e->getMessage()]);
 }

@@ -51,7 +51,7 @@
                 </a>
                 
                 <?php if ($album['situacao_id'] != 4): ?>
-                    <a href="../colecao/adicionar_colecao.php?store_id=<?= $album['id'] ?>" class="btn-action primary-action">
+                    <a href="processar_aquisicao.php?id=<?= $album['id'] ?>" class="btn-action primary-action">
                         <i class="fas fa-check-circle"></i> Adquirir (Mover para Coleção)
                     </a>
                 <?php endif; ?>
