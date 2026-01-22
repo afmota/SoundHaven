@@ -49,7 +49,7 @@ $isAdmin = $logado && ($_SESSION['usuario_tipo'] == 1);
                         <ul>
                             <li><a href="/dashboard.php"><i class="fas fa-home"></i> Dashboard</a></li>
                             <li><a href="/colecao/colecao.php"><i class="fas fa-list-alt"></i> Minha Coleção</a></li>
-                            <li><a href="/estatisticas.php"><i class="fas fa-chart-line"></i> Estatísticas</a></li>
+                            <li><a href="/colecao/estatisticas.php"><i class="fas fa-chart-line"></i> Estatísticas</a></li>
                             <li><a href="/loja/store.php"><i class="fas fa-store"></i> Loja</a></li>
                             <?php if ($isAdmin): ?>
                                 <li><a href="/usuarios.php"><i class="fas fa-users-cog"></i> Gerenciar Usuários</a></li>
