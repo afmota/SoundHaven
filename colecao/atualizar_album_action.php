@@ -1,95 +1,102 @@
 <?php
 require_once '../src/config/config.php';
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
+
+$user_id = $_SESSION['user_id'] ?? 1; // Segurança: Sempre use o ID da sessão
+
 /** @var PDO $pdo */
 header('Content-Type: application/json');
 
-// 1. Recebe e decodifica o JSON
 $input = file_get_contents('php://input');
 $data = json_decode($input, true);
 
-// 2. Validação básica do ID
 $id_album = isset($data['colecao_id']) ? (int)$data['colecao_id'] : 0;
 
 if ($id_album <= 0) {
-    echo json_encode(['success' => false, 'error' => 'ID do álbum inválido ou não recebido pelo servidor.']);
+    echo json_encode(['success' => false, 'error' => 'ID do álbum inválido.']);
     exit;
 }
 
 try {
     $pdo->beginTransaction();
 
-    // 3. Tratamento de preço (Converte 1.250,00 ou R$ 50,00 para 1250.00)
+    // 1. TRATAMENTO DE GRAVADORA (Lógica de Tag)
+    $gravadora_id = $data['gravadora_id'] ?? null;
+    if ($gravadora_id && !is_numeric($gravadora_id)) {
+        // Se não for número, é uma gravadora nova vinda via Select2 Tag
+        $stmt_g = $pdo->prepare("INSERT INTO gravadoras (nome) VALUES (?)");
+        $stmt_g->execute([$gravadora_id]);
+        $gravadora_id = $pdo->lastInsertId();
+    }
+
+    // 2. TRATAMENTO DE PREÇO
     $preco_raw = $data['preco'] ?? '0';
     $preco_limpo = str_replace(['R$', ' ', '.'], '', $preco_raw);
     $preco_final = (float)str_replace(',', '.', $preco_limpo);
 
-    // 4. Update na Tabela Principal (colecao)
+    // 3. UPDATE COM TRAVA DE SEGURANÇA (user_id)
     $sql_main = "UPDATE colecao SET 
-                    titulo = ?, 
-                    capa_url = ?,
-                    gravadora_id = ?, 
-                    formato_id = ?, 
-                    numero_catalogo = ?, 
-                    data_lancamento = ?, 
-                    data_aquisicao = ?, 
-                    preco = ?, 
-                    observacoes = ?, 
+                    titulo = ?, capa_url = ?, gravadora_id = ?, 
+                    formato_id = ?, numero_catalogo = ?, data_lancamento = ?, 
+                    data_aquisicao = ?, preco = ?, observacoes = ?, 
                     atualizado_em = NOW() 
-                WHERE id = ?";
+                WHERE id = ? AND user_id = ?";
     
     $stmt = $pdo->prepare($sql_main);
     $stmt->execute([
         $data['titulo'],
         $data['capa_url'] ?? null,
-        $data['gravadora_id'] ?: null,
+        $gravadora_id ?: null,
         $data['formato_id'] ?: null,
         $data['numero_catalogo'] ?? '',
         $data['data_lancamento'] ?: null,
         $data['data_aquisicao'] ?: null,
         $preco_final,
         $data['observacoes'] ?? '',
-        $id_album
+        $id_album,
+        $user_id
     ]);
 
-    // 5. Função de Sincronização para tabelas M:N
-    // Ela usa o $id_album que validamos ser um inteiro existente
-    function syncRelations($pdo, $table, $column, $list, $id_pai) {
-        // Remove relações antigas
-        $del = $pdo->prepare("DELETE FROM $table WHERE colecao_id = ?");
-        $del->execute([$id_pai]);
+    // 4. FUNÇÃO DE SINCRONIZAÇÃO MELHORADA (Suporta Tags para Gêneros/Estilos)
+    function syncAdvanced($pdo, $table, $column, $mainTable, $nameColumn, $values, $id_pai) {
+        // Limpa antigos
+        $pdo->prepare("DELETE FROM $table WHERE colecao_id = ?")->execute([$id_pai]);
 
-        // Insere as novas
-        if (is_array($list) && !empty($list)) {
+        if (!empty($values) && is_array($values)) {
             $ins = $pdo->prepare("INSERT INTO $table (colecao_id, $column) VALUES (?, ?)");
-            foreach ($list as $item_id) {
-                if (!empty($item_id)) {
-                    $ins->execute([$id_pai, (int)$item_id]);
+            foreach ($values as $val) {
+                if (is_numeric($val)) {
+                    $idFinal = $val;
+                } else {
+                    // Se for texto, tenta achar ou cria (Tag)
+                    $check = $pdo->prepare("SELECT id FROM $mainTable WHERE $nameColumn = ?");
+                    $check->execute([$val]);
+                    $idFinal = $check->fetchColumn();
+                    if (!$idFinal) {
+                        $create = $pdo->prepare("INSERT INTO $mainTable ($nameColumn) VALUES (?)");
+                        $create->execute([$val]);
+                        $idFinal = $pdo->lastInsertId();
+                    }
                 }
+                $ins->execute([$id_pai, $idFinal]);
             }
         }
     }
 
-    // Executa sincronização para todas as tabelas auxiliares
-    syncRelations($pdo, 'colecao_artista', 'artista_id', $data['artistas'] ?? [], $id_album);
-    syncRelations($pdo, 'colecao_genero', 'genero_id', $data['generos'] ?? [], $id_album);
-    syncRelations($pdo, 'colecao_estilo', 'estilo_id', $data['estilos'] ?? [], $id_album);
-    syncRelations($pdo, 'colecao_produtor', 'produtor_id', $data['produtores'] ?? [], $id_album);
+    // Sincroniza M:N com suporte a criação dinâmica
+    syncAdvanced($pdo, 'colecao_artista', 'artista_id', 'artistas', 'nome', $data['artistas'] ?? [], $id_album);
+    syncAdvanced($pdo, 'colecao_genero', 'genero_id', 'generos', 'descricao', $data['generos'] ?? [], $id_album);
+    syncAdvanced($pdo, 'colecao_estilo', 'estilo_id', 'estilos', 'descricao', $data['estilos'] ?? [], $id_album);
+    syncAdvanced($pdo, 'colecao_produtor', 'produtor_id', 'produtores', 'nome', $data['produtores'] ?? [], $id_album);
 
-    // 6. Atualização da Tracklist (colecao_faixas)
-    $del_faixas = $pdo->prepare("DELETE FROM colecao_faixas WHERE colecao_id = ?");
-    $del_faixas->execute([$id_album]);
+    // 5. TRACKLIST (Wipe and Replace)
+    $pdo->prepare("DELETE FROM colecao_faixas WHERE colecao_id = ?")->execute([$id_album]);
 
-    if (isset($data['tracks']) && is_array($data['tracks'])) {
-        $sql_faixa = "INSERT INTO colecao_faixas (colecao_id, numero_faixa, titulo, duracao) VALUES (?, ?, ?, ?)";
-        $stmt_f = $pdo->prepare($sql_faixa);
+    if (!empty($data['tracks']) && is_array($data['tracks'])) {
+        $stmt_f = $pdo->prepare("INSERT INTO colecao_faixas (colecao_id, numero_faixa, titulo, duracao) VALUES (?, ?, ?, ?)");
         foreach ($data['tracks'] as $idx => $track) {
             if (!empty($track['titulo'])) {
-                $stmt_f->execute([
-                    $id_album,
-                    $idx + 1,
-                    $track['titulo'],
-                    $track['duracao'] ?? ''
-                ]);
+                $stmt_f->execute([$id_album, $idx + 1, $track['titulo'], $track['duracao'] ?? '']);
             }
         }
     }
@@ -98,8 +105,6 @@ try {
     echo json_encode(['success' => true]);
 
 } catch (Exception $e) {
-    if ($pdo->inTransaction()) {
-        $pdo->rollBack();
-    }
-    echo json_encode(['success' => false, 'error' => "Erro no banco: " . $e->getMessage()]);
+    if ($pdo->inTransaction()) { $pdo->rollBack(); }
+    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }

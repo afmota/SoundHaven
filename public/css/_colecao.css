@@ -980,3 +980,37 @@ input:focus, select:focus {
     border: none !important;
 }
 
+/* Custom Select2 para Seleção Simples (Single) - Dark Mode */
+
+/* O "campo" onde aparece o nome selecionado */
+.select2-container--default .select2-selection--single {
+    background-color: #1a1a1a !important;
+    border: 1px solid #333 !important;
+    border-radius: 8px !important;
+    height: 45px !important; /* Altura aproximada dos seus outros inputs */
+    display: flex !important;
+    align-items: center !important;
+}
+
+/* O texto dentro do campo simples */
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: #fff !important;
+    padding-left: 12px !important;
+}
+
+/* A setinha do lado direito */
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 43px !important;
+}
+
+/* Ajuste do campo de busca que aparece quando o select simples está aberto */
+.select2-container--default .select2-search--dropdown .select2-search__field {
+    background-color: #0f0f0f !important;
+    border: 1px solid #444 !important;
+    color: #fff !important;
+}
+
+.select2-results__option--highlighted {
+    background-color: #00d4ff !important; /* Cor neon que você usa */
+    color: #000 !important;
+}
