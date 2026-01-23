@@ -5,11 +5,11 @@ require_once '../src/functions/funcoes.php';
 
 // Captura dados vindos da Loja (se houver)
 $from_store_id = filter_input(INPUT_GET, 'from_store', FILTER_VALIDATE_INT);
-$titulo        = filter_input(INPUT_GET, 'titulo', FILTER_DEFAULT) ?? '';
-$artista_id    = filter_input(INPUT_GET, 'artista_id', FILTER_VALIDATE_INT);
-$formato_id    = filter_input(INPUT_GET, 'formato_id', FILTER_VALIDATE_INT);
-$capa_url      = filter_input(INPUT_GET, 'capa_url', FILTER_DEFAULT) ?? '';
-$data_lanc     = filter_input(INPUT_GET, 'data_lanc', FILTER_DEFAULT) ?? '';
+$titulo         = filter_input(INPUT_GET, 'titulo', FILTER_DEFAULT) ?? '';
+$artista_id     = filter_input(INPUT_GET, 'artista_id', FILTER_VALIDATE_INT);
+$formato_id     = filter_input(INPUT_GET, 'formato_id', FILTER_VALIDATE_INT);
+$capa_url       = filter_input(INPUT_GET, 'capa_url', FILTER_DEFAULT) ?? '';
+$data_lanc      = filter_input(INPUT_GET, 'data_lanc', FILTER_DEFAULT) ?? '';
 
 // Consultas para os selects
 $artistas = $pdo->query("SELECT id, nome FROM artistas ORDER BY nome ASC")->fetchAll(PDO::FETCH_ASSOC);
@@ -34,6 +34,7 @@ require_once '../include/header.php';
         <form id="form-colecao" class="colecao-form">
             <input type="hidden" id="colecao_id" value="0"> 
             <input type="hidden" id="store_id" value="<?php echo $from_store_id; ?>">
+            
             <div class="form-group full-width" style="margin-bottom: 20px;">
                 <label>URL da Capa do Álbum</label>
                 <div style="display: flex; gap: 15px; align-items: flex-start;">
@@ -67,7 +68,7 @@ require_once '../include/header.php';
                 <div class="form-group">
                     <label>Gravadora</label>
                     <select id="gravadora_id">
-                        <option value="">Selecione...</option>
+                        <option value="">Selecione ou digite uma nova...</option>
                         <?php foreach ($gravadoras as $g): ?>
                             <option value="<?= $g['id'] ?>"><?= htmlspecialchars($g['nome']) ?></option>
                         <?php endforeach; ?>
@@ -159,7 +160,7 @@ require_once '../include/header.php';
                         </tr>
                     </thead>
                     <tbody id="tracklist-body">
-                        </tbody>
+                    </tbody>
                 </table>
             </div>
 
@@ -177,11 +178,40 @@ require_once '../include/header.php';
     </div>
 </div>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script src="../js/tracklist_manager.js"></script>
 <script src="../js/colecao_form.js"></script>
+
+<script>
+$(document).ready(function() {
+    // ESTA É A PARTE QUE FALTAVA: Ativar a criação de tags para a Gravadora
+    $('#gravadora_id').select2({
+        tags: true,
+        placeholder: "Selecione ou digite uma nova...",
+        width: '100%',
+        allowClear: true,
+        language: {
+            noResults: function() {
+                return "Pressione Enter para adicionar";
+            }
+        }
+    });
+
+    // Configura os demais selects
+    $('.select2-artistas').select2({ width: '100%' });
+    $('.select2-tags').select2({
+        tags: true,
+        width: '100%'
+    });
+
+    // Preview da imagem
+    $('#capa_url').on('input', function() {
+        $('#img-preview').attr('src', $(this).val() || '../assets/img/default-cover.png');
+    });
+});
+</script>
 
 <?php require_once '../include/footer.php'; ?>

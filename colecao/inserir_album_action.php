@@ -1,12 +1,11 @@
 <?php
 require_once '../src/config/config.php';
-// No topo do arquivo, logo após o require_once do config
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-$user_id = $_SESSION['user_id'] ?? 1; // Pega o id logado, ou 1 como fallback de segurança
+$user_id = $_SESSION['user_id'] ?? 1; // Pega o id logado, ou 1 como fallback
 
 /** @var PDO $pdo */
 header('Content-Type: application/json');
@@ -22,7 +21,27 @@ if (!$data || empty($data['titulo'])) {
 try {
     $pdo->beginTransaction();
 
-    // 1. Inserir na tabela colecao
+    // 1. TRATAMENTO DE GRAVADORA (Lógica de Tag/Criação em tempo real)
+    $gravadora_id = $data['gravadora_id'] ?? null;
+    
+    if ($gravadora_id && !is_numeric($gravadora_id)) {
+        // Se não for um número, o usuário digitou um nome novo no Select2
+        // Primeiro, verificamos se já não existe uma gravadora com esse nome (evitar duplicados)
+        $checkG = $pdo->prepare("SELECT id FROM gravadoras WHERE nome = ?");
+        $checkG->execute([$gravadora_id]);
+        $idExistente = $checkG->fetchColumn();
+
+        if ($idExistente) {
+            $gravadora_id = $idExistente;
+        } else {
+            // Se realmente não existe, insere a nova
+            $stmt_g = $pdo->prepare("INSERT INTO gravadoras (nome) VALUES (?)");
+            $stmt_g->execute([$gravadora_id]);
+            $gravadora_id = $pdo->lastInsertId();
+        }
+    }
+
+    // 2. Inserir na tabela colecao
     $stmt = $pdo->prepare("INSERT INTO colecao (
         titulo, gravadora_id, formato_id, numero_catalogo, 
         data_lancamento, data_aquisicao, preco, observacoes, 
@@ -31,11 +50,12 @@ try {
     
     // Tratamento do preço: remove pontos de milhar e troca vírgula por ponto
     $precoRaw = $data['preco'] ?: '0';
-    $preco = str_replace(['.', ','], ['', '.'], $precoRaw);
+    $preco_limpo = str_replace(['R$', ' ', '.'], '', $precoRaw);
+    $preco = str_replace(',', '.', $preco_limpo);
 
     $stmt->execute([
         $data['titulo'],
-        $data['gravadora_id'] ?: null,
+        $gravadora_id ?: null,
         $data['formato_id'] ?: null,
         $data['numero_catalogo'] ?: null,
         $data['data_lancamento'] ?: null,
@@ -49,7 +69,7 @@ try {
 
     $colecao_id = $pdo->lastInsertId();
 
-    // Função de Sincronização de Tags (Mantida original)
+    // Função de Sincronização de Tags (M:N)
     function syncTags($pdo, $pivotTable, $pivotColumn, $mainTable, $nameColumn, $values, $colecao_id) {
         if (!empty($values) && is_array($values)) {
             $insPivot = $pdo->prepare("INSERT INTO $pivotTable (colecao_id, $pivotColumn) VALUES (?, ?)");
@@ -71,25 +91,23 @@ try {
         }
     }
 
-    // 2. Sincronizar M:N
+    // 3. Sincronizar Relacionamentos M:N
     syncTags($pdo, 'colecao_artista', 'artista_id', 'artistas', 'nome', $data['artistas'] ?? [], $colecao_id);
     syncTags($pdo, 'colecao_genero', 'genero_id', 'generos', 'descricao', $data['generos'] ?? [], $colecao_id);
     syncTags($pdo, 'colecao_estilo', 'estilo_id', 'estilos', 'descricao', $data['estilos'] ?? [], $colecao_id);
     syncTags($pdo, 'colecao_produtor', 'produtor_id', 'produtores', 'nome', $data['produtores'] ?? [], $colecao_id);
 
-    // 3. Inserir Faixas (Usando 'tracklist' do JS e índice automático $i+1)
+    // 4. Inserir Faixas (Tracklist)
     if (!empty($data['tracklist'])) {
         $stmt_f = $pdo->prepare("INSERT INTO colecao_faixas (colecao_id, numero_faixa, titulo, duracao) VALUES (?, ?, ?, ?)");
         foreach ($data['tracklist'] as $i => $t) {
             if (!empty($t['titulo'])) {
-                // Conforme solicitado: mantendo o índice automático
                 $stmt_f->execute([$colecao_id, $i + 1, $t['titulo'], $t['duracao']]);
             }
         }
     }
 
-    // 4. ATUALIZAR LOJA (Somente se houver store_id)
-    // Conforme solicitado: Índice 4 para Adquirido
+    // 5. ATUALIZAR LOJA (Se vindo de uma compra/desejo)
     if (!empty($data['store_id']) && $data['store_id'] > 0) {
         $stmt_store = $pdo->prepare("UPDATE store SET situacao = 4, atualizado_em = NOW() WHERE id = ?");
         $stmt_store->execute([$data['store_id']]);
