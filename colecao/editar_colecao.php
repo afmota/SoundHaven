@@ -54,6 +54,11 @@ include_once '../include/header.php';
     .tracklist-table tr { background: rgba(255, 255, 255, 0.03); }
     .editable-cell { padding: 12px; outline: none; }
 
+    /* Botão Sincronizar (Estilo para o input group) */
+    .input-sync-group { display: flex; gap: 10px; }
+    .btn-sync { background: #17a2b8; border: none; color: white; border-radius: 8px; padding: 0 15px; height: 42px; cursor: pointer; transition: 0.3s; }
+    .btn-sync:hover { background: #138496; }
+
     /* Botão Salvar Principal */
     .btn-save-master { background: linear-gradient(135deg, #007bff, #00d4ff); border: none; padding: 20px; border-radius: 50px; color: #fff; font-weight: bold; width: 30%; margin: 40px auto; font-size: 1rem; box-shadow: 0 10px 20px rgba(0, 123, 255, 0.2); transition: 0.3s; display: block; cursor: pointer; }
     .btn-save-master:hover { transform: translateY(-3px); box-shadow: 0 15px 25px rgba(0, 212, 255, 0.4); }
@@ -178,7 +183,12 @@ include_once '../include/header.php';
         <div class="row">
             <div class="col-4">
                 <label>Nº Catálogo</label>
-                <input type="text" id="numero_catalogo" value="<?= $album['numero_catalogo'] ?>">
+                <div class="input-sync-group">
+                    <input type="text" id="numero_catalogo" value="<?= $album['numero_catalogo'] ?>" style="margin-bottom: 0;">
+                    <button type="button" id="btn-import-tracks" class="btn-sync" title="Sincronizar com Discogs">
+                        <i class="fas fa-sync"></i>
+                    </button>
+                </div>
             </div>
             <div class="col-4">
                 <label>Preço</label>
@@ -189,7 +199,7 @@ include_once '../include/header.php';
                 <input type="date" id="data_aquisicao" value="<?= $album['data_aquisicao'] ?>">
             </div>
         </div>
-        <label>Notas</label>
+        <label class="mt-3">Notas</label>
         <textarea id="observacoes" rows="3"><?= htmlspecialchars($album['observacoes'] ?? '') ?></textarea>
     </fieldset>
 
@@ -198,7 +208,7 @@ include_once '../include/header.php';
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="/js/colecao_edit_manager.js?v=<?= time(); ?>"></script>
+<script src="../js/colecao_edit_manager.js?v=<?= time(); ?>"></script>
 
 <script>
 $(document).ready(function() {

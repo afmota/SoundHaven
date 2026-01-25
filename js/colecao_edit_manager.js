@@ -2,6 +2,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const tracklistBody = document.getElementById('tracklist-body');
     const btnSave = document.getElementById('btn-save-full-album');
+    const btnImport = document.getElementById('btn-import-tracks');
     const albumId = document.getElementById('colecao_id').value;
 
     // Helper para pegar valores simples
@@ -13,6 +14,64 @@ document.addEventListener('DOMContentLoaded', () => {
         return el.val() || [];
     };
 
+    // --- LÓGICA DE IMPORTAÇÃO (DISCOGS via importar_faixas_api.php) ---
+    btnImport?.addEventListener('click', async () => {
+        const catNo = getVal('numero_catalogo');
+        const titulo = getVal('titulo'); // Pega o título para ajudar no refinamento da busca
+
+        if (!catNo) {
+            alert("Por favor, digite o Número de Catálogo antes de sincronizar.");
+            return;
+        }
+
+        btnImport.disabled = true;
+        btnImport.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+        try {
+            // Enviamos via POST para o importar_faixas_api.php, conforme a lógica dele
+            const response = await fetch('importar_faixas_api.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    numero_catalogo: catNo,
+                    titulo: titulo,
+                    colecao_id: albumId
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.tracklist) {
+                // Limpa a tabela atual para inserir as faixas importadas
+                tracklistBody.innerHTML = '';
+                
+                data.tracklist.forEach((track) => {
+                    const row = `
+                        <tr>
+                            <td class="track-num text-center text-info font-weight-bold">${track.numero_faixa}</td>
+                            <td contenteditable="true" class="editable-cell editable-title">${track.titulo}</td>
+                            <td contenteditable="true" class="editable-cell editable-duration">${track.duracao || '--:--'}</td>
+                            <td class="text-center"><i class="fas fa-times btn-remove text-danger" style="cursor:pointer"></i></td>
+                        </tr>`;
+                    tracklistBody.insertAdjacentHTML('beforeend', row);
+                });
+                
+                // Opcional: Avisa qual álbum foi encontrado para o usuário conferir
+                console.log("Sincronizado com: " + data.release_title);
+                alert("Tracklist de '" + data.release_title + "' importada com sucesso!");
+                
+            } else {
+                alert(data.message || "Nenhum resultado encontrado no Discogs.");
+            }
+        } catch (error) {
+            console.error("Erro na sincronização:", error);
+            alert("Erro ao conectar com a API de importação.");
+        } finally {
+            btnImport.disabled = false;
+            btnImport.innerHTML = '<i class="fas fa-sync"></i>';
+        }
+    });
+
     // --- LÓGICA DA TABELA DE FAIXAS (TRACKLIST) ---
     
     // Adicionar faixa manualmente
@@ -23,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td class="track-num text-center text-info font-weight-bold">${nextNum}</td>
                 <td contenteditable="true" class="editable-cell editable-title">Nova Faixa</td>
                 <td contenteditable="true" class="editable-cell editable-duration">0:00</td>
-                <td class="text-center"><i class="fas fa-times btn-remove text-muted" style="cursor:pointer"></i></td>
+                <td class="text-center"><i class="fas fa-times btn-remove text-danger" style="cursor:pointer"></i></td>
             </tr>`;
         tracklistBody.insertAdjacentHTML('beforeend', row);
     });
@@ -33,6 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.classList.contains('btn-remove')) {
             if (confirm('Deseja remover esta faixa?')) {
                 e.target.closest('tr').remove();
+                // Re-numera as faixas após a remoção
                 Array.from(tracklistBody.querySelectorAll('.track-num')).forEach((td, i) => {
                     td.textContent = i + 1;
                 });
@@ -50,7 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
             colecao_id: albumId,
             titulo: getVal('titulo'),
             capa_url: getVal('capa_url'),
-            gravadora_id: $('#gravadora_id').val(), // Captura via jQuery/Select2 para pegar a Tag
+            gravadora_id: $('#gravadora_id').val(),
             formato_id: getVal('formato_id'),
             numero_catalogo: getVal('numero_catalogo'),
             data_lancamento: getVal('data_lancamento'),
@@ -94,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             alert("Falha: " + error.message);
             btnSave.disabled = false;
-            btnSave.innerHTML = '<i class="fas fa-check-circle"></i> CONCLUIR E SALVAR ALTERAÇÕES';
+            btnSave.innerHTML = 'SALVAR ALTERAÇÕES';
         }
     });
 });
