@@ -1,9 +1,12 @@
-// js/colecao_edit_manager.js
 document.addEventListener('DOMContentLoaded', () => {
     const tracklistBody = document.getElementById('tracklist-body');
     const btnSave = document.getElementById('btn-save-full-album');
     const btnImport = document.getElementById('btn-import-tracks');
     const albumId = document.getElementById('colecao_id').value;
+
+    // Elementos do Modal de Gravadora
+    const btnSaveNewGravadora = document.getElementById('btn-save-new-gravadora');
+    const inputNovaGravadora = document.getElementById('nova_gravadora_nome');
 
     // Helper para pegar valores simples
     const getVal = (id) => document.getElementById(id)?.value || '';
@@ -14,10 +17,51 @@ document.addEventListener('DOMContentLoaded', () => {
         return el.val() || [];
     };
 
+    // --- LÓGICA DO MODAL: NOVA GRAVADORA ---
+    btnSaveNewGravadora?.addEventListener('click', async () => {
+        const nome = inputNovaGravadora.value.trim();
+        if (!nome) {
+            alert("Por favor, digite o nome da gravadora.");
+            return;
+        }
+
+        btnSaveNewGravadora.disabled = true;
+        btnSaveNewGravadora.textContent = 'Salvando...';
+
+        try {
+            // Enviamos para um arquivo auxiliar via FormData ou JSON
+            const response = await fetch('ajax_salvar_gravadora.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `nome=${encodeURIComponent(nome)}`
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Adiciona a nova gravadora ao Select2 e a seleciona automaticamente
+                const newOption = new Option(result.nome, result.id, true, true);
+                $('#gravadora_id').append(newOption).trigger('change');
+                
+                // Limpa e fecha o modal (usando jQuery por causa do Bootstrap 4/5)
+                inputNovaGravadora.value = '';
+                $('#modalGravadora').modal('hide');
+            } else {
+                alert("Erro: " + result.error);
+            }
+        } catch (error) {
+            console.error("Erro ao salvar gravadora:", error);
+            alert("Erro de conexão ao salvar gravadora.");
+        } finally {
+            btnSaveNewGravadora.disabled = false;
+            btnSaveNewGravadora.textContent = 'Salvar e Selecionar';
+        }
+    });
+
     // --- LÓGICA DE IMPORTAÇÃO (DISCOGS via importar_faixas_api.php) ---
     btnImport?.addEventListener('click', async () => {
         const catNo = getVal('numero_catalogo');
-        const titulo = getVal('titulo'); // Pega o título para ajudar no refinamento da busca
+        const titulo = getVal('titulo');
 
         if (!catNo) {
             alert("Por favor, digite o Número de Catálogo antes de sincronizar.");
@@ -28,7 +72,6 @@ document.addEventListener('DOMContentLoaded', () => {
         btnImport.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
         try {
-            // Enviamos via POST para o importar_faixas_api.php, conforme a lógica dele
             const response = await fetch('importar_faixas_api.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -42,7 +85,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
 
             if (data.success && data.tracklist) {
-                // Limpa a tabela atual para inserir as faixas importadas
                 tracklistBody.innerHTML = '';
                 
                 data.tracklist.forEach((track) => {
@@ -56,7 +98,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     tracklistBody.insertAdjacentHTML('beforeend', row);
                 });
                 
-                // Opcional: Avisa qual álbum foi encontrado para o usuário conferir
                 console.log("Sincronizado com: " + data.release_title);
                 alert("Tracklist de '" + data.release_title + "' importada com sucesso!");
                 
@@ -73,8 +114,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- LÓGICA DA TABELA DE FAIXAS (TRACKLIST) ---
-    
-    // Adicionar faixa manualmente
     document.getElementById('btn-add-manual')?.addEventListener('click', () => {
         const nextNum = tracklistBody.rows.length + 1;
         const row = `
@@ -87,12 +126,10 @@ document.addEventListener('DOMContentLoaded', () => {
         tracklistBody.insertAdjacentHTML('beforeend', row);
     });
 
-    // Remover faixa e reordenar números
     tracklistBody?.addEventListener('click', (e) => {
         if (e.target.classList.contains('btn-remove')) {
             if (confirm('Deseja remover esta faixa?')) {
                 e.target.closest('tr').remove();
-                // Re-numera as faixas após a remoção
                 Array.from(tracklistBody.querySelectorAll('.track-num')).forEach((td, i) => {
                     td.textContent = i + 1;
                 });
@@ -110,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
             colecao_id: albumId,
             titulo: getVal('titulo'),
             capa_url: getVal('capa_url'),
-            gravadora_id: $('#gravadora_id').val(),
+            gravadora_id: $('#gravadora_id').val(), // Pega o ID (numérico) selecionado
             formato_id: getVal('formato_id'),
             numero_catalogo: getVal('numero_catalogo'),
             data_lancamento: getVal('data_lancamento'),
