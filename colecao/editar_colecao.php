@@ -99,17 +99,13 @@ include_once '../include/header.php';
                 <div class="row">
                     <div class="col-6">
                         <label>Gravadora</label>
-                        <div class="input-addon-group">
-                            <select id="gravadora_id">
-                                <option value="">Selecione...</option>
-                                <?php foreach($gravadoras as $g): ?>
-                                    <option value="<?= $g['id'] ?>" <?= $g['id'] == $album['gravadora_id'] ? 'selected' : '' ?>><?= htmlspecialchars($g['nome']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                            <button type="button" class="btn-add-inline" data-bs-toggle="modal" data-bs-target="#modalGravadora" title="Nova Gravadora">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>                    </div>
+                        <select id="gravadora_id">
+                            <option value="">Selecione...</option>
+                            <?php foreach($gravadoras as $g): ?>
+                                <option value="<?= $g['id'] ?>" <?= $g['id'] == $album['gravadora_id'] ? 'selected' : '' ?>><?= htmlspecialchars($g['nome']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                     <div class="col-6">
                         <label>Formato</label>
                         <select id="formato_id">
@@ -236,24 +232,5 @@ $(document).ready(function() {
     });
 });
 </script>
-
-<div class="modal fade" id="modalGravadora" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Nova Gravadora</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <label>Nome da Gravadora</label>
-        <input type="text" id="nova_gravadora_nome" class="form-control" placeholder="Digite o nome...">
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" id="btn-save-new-gravadora" class="btn btn-success">Salvar e Selecionar</button>
-      </div>
-    </div>
-  </div>
-</div>
 
 <?php include_once '../include/footer.php'; ?>

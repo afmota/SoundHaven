@@ -4,10 +4,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const tracklistBody = document.getElementById('tracklist-body');
     const getVal = (id) => document.getElementById(id)?.value || '';
     
-    // Elementos do Modal de Gravadora
-    const btnSaveNewGravadora = document.getElementById('btn-save-new-gravadora');
-    const inputNovaGravadora = document.getElementById('nova_gravadora_nome');
-
     const getSelectValues = (id) => {
         const el = document.getElementById(id);
         if (!el) return [];
@@ -30,50 +26,12 @@ document.addEventListener('DOMContentLoaded', () => {
         tracklistBody.insertAdjacentHTML('beforeend', row);
     }
 
-    // --- LÓGICA DO MODAL: NOVA GRAVADORA ---
-    btnSaveNewGravadora?.addEventListener('click', async () => {
-        const nome = inputNovaGravadora.value.trim();
-        if (!nome) {
-            alert("Por favor, digite o nome da gravadora.");
-            return;
-        }
-
-        btnSaveNewGravadora.disabled = true;
-        btnSaveNewGravadora.textContent = 'Salvando...';
-
-        try {
-            const response = await fetch('ajax_salvar_gravadora.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `nome=${encodeURIComponent(nome)}`
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                const newOption = new Option(result.nome, result.id, true, true);
-                $('#gravadora_id').append(newOption).trigger('change');
-                
-                inputNovaGravadora.value = '';
-                $('#modalGravadora').modal('hide');
-            } else {
-                alert("Erro: " + result.error);
-            }
-        } catch (error) {
-            console.error("Erro ao salvar gravadora:", error);
-            alert("Erro de conexão ao salvar gravadora.");
-        } finally {
-            btnSaveNewGravadora.disabled = false;
-            btnSaveNewGravadora.textContent = 'Salvar e Selecionar';
-        }
-    });
-
-    // --- SINCRONIZAÇÃO DISCOGS ---
+    // --- SINCRONIZAÇÃO DISCOGS (COM BUSCA REFINADA POR TÍTULO) ---
     const btnSync = document.getElementById('btn-import-tracks');
     if (btnSync) {
         btnSync.addEventListener('click', async () => {
             const catNo = getVal('numero_catalogo');
-            const tituloAlbum = getVal('titulo');
+            const tituloAlbum = getVal('titulo'); // Captura o título para ajudar no desempate
 
             if (!catNo) { alert("Digite o Número de Catálogo."); return; }
 
@@ -113,12 +71,13 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSave.addEventListener('click', async (e) => {
             e.preventDefault();
             
+            // Trava de segurança para evitar múltiplos cliques
             if (btnSave.disabled) return;
 
             const payload = {
                 store_id: getVal('store_id'),
                 titulo: getVal('titulo'),
-                gravadora_id: $('#gravadora_id').val(), // Pega o valor do select2
+                gravadora_id: getVal('gravadora_id'),
                 formato_id: getVal('formato_id'),
                 numero_catalogo: getVal('numero_catalogo'),
                 data_lancamento: getVal('data_lancamento'),

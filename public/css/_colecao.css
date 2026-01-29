@@ -1014,13 +1014,3 @@ input:focus, select:focus {
     background-color: #00d4ff !important; /* Cor neon que você usa */
     color: #000 !important;
 }
-
-/* Alinhamento para o grupo de gravadora */
-.input-addon-group { display: flex; gap: 8px; align-items: flex-start; }
-.btn-add-inline { background: #28a745; border: none; color: white; border-radius: 8px; padding: 0 12px; height: 42px; cursor: pointer; transition: 0.3s; }
-.btn-add-inline:hover { background: #218838; }
-
-/* Ajuste para o Modal no Dark Mode */
-.modal-content { background-color: #1a1a1a; color: #fff; border: 1px solid #333; }
-.modal-header { border-bottom: 1px solid #333; }
-.modal-footer { border-top: 1px solid #333; }
