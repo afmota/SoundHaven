@@ -109,9 +109,7 @@ include_once '../include/header.php';
                             <button type="button" class="btn-add-inline" data-bs-toggle="modal" data-bs-target="#modalGravadora" title="Nova Gravadora">
                                 <i class="fas fa-plus"></i>
                             </button>
-                        </div>                    
-                    </div>
-                    
+                        </div>                    </div>
                     <div class="col-6">
                         <label>Formato</label>
                         <select id="formato_id">
